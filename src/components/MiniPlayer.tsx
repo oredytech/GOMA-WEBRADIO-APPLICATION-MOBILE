@@ -1,28 +1,53 @@
-import { useState } from "react";
+import { Link, useLocation } from "@tanstack/react-router";
+import { usePlayer } from "@/context/player";
+import logo from "@/assets/logo.png.asset.json";
 
 export function MiniPlayer() {
-  const [playing, setPlaying] = useState(true);
+  const { track, playing, loading, toggle, stop } = usePlayer();
+  const { pathname } = useLocation();
+  if (!track || pathname === "/radio") return null;
+
+  const href = track.kind === "radio" ? "/radio" : "/podcasts";
+
   return (
-    <div className="fixed bottom-24 left-4 right-4 bg-surface-container-lowest/85 border border-outline-variant/40 backdrop-blur-md p-3 rounded-lg shadow-2xl flex items-center gap-3 z-40">
-      <div className="w-12 h-12 rounded-md overflow-hidden flex-shrink-0 border border-outline-variant/40">
-        <img
-          className="w-full h-full object-cover"
-          alt="Now playing"
-          src="https://lh3.googleusercontent.com/aida-public/AB6AXuDUg2e-_7JzMp8TpZg9E1yrPCbik5Vg36Yi-sI3vFRFZLwq8-UhVIfyid7txvrcv_cl-IlBNAZ155DcVtpJ2f3AKS2rsPYh-HqZE9wlyNIMJlGMWmPM9M4pG958fb7CEdX2YvS6savZNq_iFikwxonnoXV3LN8j9qZ5us-Zz5o4TfM9RCFoG_xEp46Nw6QVevnOBLM3eZczxGn---Avsfxm9kUrlV5AD0AuqSv0dSpX4e2ZEZgetBLATg"
-        />
-      </div>
-      <div className="flex-grow overflow-hidden">
-        <h4 className="font-label-lg text-label-lg text-primary truncate">DIRECT : Le Grand Réveil</h4>
-        <p className="text-on-surface-muted truncate" style={{ fontSize: 11 }}>Animé par Mama Goma</p>
-      </div>
-      <div className="flex items-center gap-1">
+    <div className="fixed bottom-[70px] left-0 right-0 z-40 px-4">
+      <div className="mx-auto flex max-w-2xl items-center gap-3 rounded-2xl border border-line bg-panel/95 p-2 pr-3 shadow-lift backdrop-blur-xl">
+        <Link to={href} className="flex min-w-0 flex-1 items-center gap-3">
+          <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-brand-deep">
+            <img
+              alt="GOMA WEBRADIO"
+              src={track.artwork ?? logo.url}
+              className={track.artwork ? "h-full w-full object-cover" : "h-full w-full object-contain p-1.5"}
+            />
+            {track.kind === "radio" && (
+              <span className="absolute bottom-0 left-0 right-0 bg-blood py-[1px] text-center text-[8px] font-bold text-white">
+                LIVE
+              </span>
+            )}
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="truncate font-display text-sm font-bold text-ink">{track.title}</p>
+            <p className="truncate text-xs text-inkmute">{track.subtitle}</p>
+          </div>
+        </Link>
         <button
-          onClick={() => setPlaying((p) => !p)}
-          className="w-10 h-10 flex items-center justify-center rounded-full bg-primary text-white active:scale-95 transition-transform shadow-md"
+          aria-label={playing ? "Pause" : "Lecture"}
+          onClick={() => toggle()}
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-blood text-white shadow-soft active:scale-95"
         >
-          <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>
-            {playing ? "pause" : "play_arrow"}
+          <span
+            className="material-symbols-outlined"
+            style={{ fontSize: 26, fontVariationSettings: "'FILL' 1" }}
+          >
+            {loading ? "hourglass_empty" : playing ? "pause" : "play_arrow"}
           </span>
+        </button>
+        <button
+          aria-label="Fermer le lecteur"
+          onClick={stop}
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-inkmute active:scale-95"
+        >
+          <span className="material-symbols-outlined" style={{ fontSize: 20 }}>close</span>
         </button>
       </div>
     </div>

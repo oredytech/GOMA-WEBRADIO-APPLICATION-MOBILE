@@ -1,0 +1,32 @@
+export type Article = {
+  id: number;
+  slug: string;
+  title: string;
+  excerpt: string;
+  content: string;
+  date: string;
+  author: string;
+  image: string | null;
+  category: string;
+  readingTime: number;
+  link: string;
+};
+
+export type Episode = {
+  id: string;
+  title: string;
+  description: string;
+  audio: string;
+  date: string;
+  duration: string;
+  image: string | null;
+  author: string;
+};
+
+export type PodcastShow = {
+  title: string;
+  description: string;
+  image: string | null;
+  author: string;
+  episodes: Episode[];
+};

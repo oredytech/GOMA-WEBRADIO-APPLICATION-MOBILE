@@ -1,93 +1,37 @@
 // Tailwind CDN config script content — injected in __root head via a <script> tag.
+// Color tokens resolve to CSS variables declared in src/styles.css (light + .dark).
 export const tailwindConfigScript = `
 tailwind.config = {
   darkMode: "class",
   theme: {
     extend: {
       colors: {
-        "secondary": "#745b00",
-        "outline-variant": "#e6bdb8",
-        "surface": "#fcf9f8",
-        "on-tertiary-fixed": "#001c38",
-        "on-tertiary": "#ffffff",
-        "on-background": "#1b1c1c",
-        "surface-bright": "#fcf9f8",
-        "surface-variant": "#F2F2F2",
-        "on-surface": "#1b1c1c",
-        "tertiary-container": "#006fc1",
-        "on-primary-container": "#ffece9",
-        "secondary-container": "#fdcc14",
-        "on-error": "#ffffff",
-        "secondary-fixed": "#ffe08b",
-        "on-error-container": "#93000a",
-        "surface-container-high": "#eae7e7",
-        "error-container": "#ffdad6",
-        "primary": "#ae0011",
-        "on-tertiary-fixed-variant": "#004881",
-        "primary-fixed-dim": "#ffb4ab",
-        "radio-live-red": "#FF0000",
-        "background": "#fcf9f8",
-        "primary-container": "#d71920",
-        "on-secondary-fixed-variant": "#584400",
-        "on-surface-variant": "#5d3f3c",
-        "surface-tint": "#c00014",
-        "outline": "#926f6b",
-        "on-primary": "#ffffff",
-        "primary-fixed": "#ffdad6",
-        "on-secondary-fixed": "#241a00",
-        "on-secondary": "#ffffff",
-        "on-secondary-container": "#6e5700",
-        "inverse-surface": "#303030",
-        "error": "#ba1a1a",
-        "inverse-primary": "#ffb4ab",
-        "surface-container-lowest": "#ffffff",
-        "tertiary-fixed-dim": "#a2c9ff",
-        "surface-dim": "#dcd9d9",
-        "on-primary-fixed": "#410002",
-        "surface-container-highest": "#e5e2e1",
-        "on-surface-muted": "#666666",
-        "inverse-on-surface": "#f3f0ef",
-        "secondary-fixed-dim": "#f1c100",
-        "surface-container": "#f0eded",
-        "on-tertiary-container": "#e9f0ff",
-        "on-primary-fixed-variant": "#93000d",
-        "tertiary": "#005698",
-        "surface-container-low": "#f6f3f2",
-        "tertiary-fixed": "#d3e4ff"
-      },
-      borderRadius: { DEFAULT: "1rem", lg: "2rem", xl: "3rem", full: "9999px" },
-      spacing: {
-        "gutter-md": "1rem",
-        "stack-md": "1rem",
-        "margin-mobile": "1.25rem",
-        "stack-lg": "1.5rem",
-        "stack-xl": "2rem",
-        "stack-xs": "0.25rem",
-        "stack-sm": "0.5rem"
+        paper: "rgb(var(--gw-paper) / <alpha-value>)",
+        panel: "rgb(var(--gw-panel) / <alpha-value>)",
+        panel2: "rgb(var(--gw-panel-2) / <alpha-value>)",
+        ink: "rgb(var(--gw-ink) / <alpha-value>)",
+        inkmute: "rgb(var(--gw-ink-mute) / <alpha-value>)",
+        line: "rgb(var(--gw-line) / <alpha-value>)",
+        brand: "rgb(var(--gw-brand) / <alpha-value>)",
+        "brand-deep": "rgb(var(--gw-brand-deep) / <alpha-value>)",
+        blood: "rgb(var(--gw-blood) / <alpha-value>)"
       },
       fontFamily: {
-        "label-lg": ["Plus Jakarta Sans"],
-        "body-lg": ["Plus Jakarta Sans"],
-        "body-md": ["Plus Jakarta Sans"],
-        "title-lg": ["Plus Jakarta Sans"],
-        "headline-sm": ["Plus Jakarta Sans"],
-        "headline-md": ["Plus Jakarta Sans"],
-        "headline-md-mobile": ["Plus Jakarta Sans"],
-        "headline-lg": ["Plus Jakarta Sans"],
-        "headline-lg-mobile": ["Plus Jakarta Sans"],
-        "display-lg": ["Plus Jakarta Sans"]
+        display: ["Funnel Display", "system-ui", "sans-serif"],
+        sans: ["Funnel Sans", "system-ui", "sans-serif"]
       },
-      fontSize: {
-        "label-lg": ["12px", { lineHeight: "16px", letterSpacing: "0.05em", fontWeight: "600" }],
-        "body-lg": ["16px", { lineHeight: "24px", fontWeight: "400" }],
-        "body-md": ["14px", { lineHeight: "20px", fontWeight: "400" }],
-        "title-lg": ["18px", { lineHeight: "24px", fontWeight: "600" }],
-        "headline-sm": ["20px", { lineHeight: "28px", fontWeight: "600" }],
-        "headline-md": ["24px", { lineHeight: "32px", fontWeight: "600" }],
-        "headline-md-mobile": ["22px", { lineHeight: "28px", fontWeight: "700" }],
-        "headline-lg": ["32px", { lineHeight: "40px", fontWeight: "700" }],
-        "headline-lg-mobile": ["28px", { lineHeight: "36px", fontWeight: "700" }],
-        "display-lg": ["40px", { lineHeight: "48px", letterSpacing: "-0.02em", fontWeight: "700" }]
+      borderRadius: { DEFAULT: "0.875rem", lg: "1.25rem", xl: "1.75rem", "2xl": "2rem" },
+      boxShadow: {
+        soft: "0 6px 24px -12px rgb(1 27 64 / 0.25)",
+        lift: "0 18px 40px -20px rgb(1 27 64 / 0.45)"
+      },
+      keyframes: {
+        "fade-up": { "0%": { opacity: "0", transform: "translateY(10px)" }, "100%": { opacity: "1", transform: "none" } },
+        "eq": { "0%,100%": { transform: "scaleY(0.35)" }, "50%": { transform: "scaleY(1)" } }
+      },
+      animation: {
+        "fade-up": "fade-up .45s cubic-bezier(.2,.8,.2,1) both",
+        eq: "eq 1s ease-in-out infinite"
       }
     }
   }
