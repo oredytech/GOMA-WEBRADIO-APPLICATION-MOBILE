@@ -9,18 +9,43 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as RechercheRouteImport } from './routes/recherche'
 import { Route as RadioRouteImport } from './routes/radio'
+import { Route as ProgrammesRouteImport } from './routes/programmes'
+import { Route as ParametresRouteImport } from './routes/parametres'
+import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as MoreRouteImport } from './routes/more'
-import { Route as ArticlesRouteImport } from './routes/articles'
+import { Route as FavorisRouteImport } from './routes/favoris'
+import { Route as AproposRouteImport } from './routes/apropos'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PodcastsIndexRouteImport } from './routes/podcasts.index'
 import { Route as ArticlesIndexRouteImport } from './routes/articles.index'
 import { Route as PodcastsIdRouteImport } from './routes/podcasts.$id'
 import { Route as ArticlesSlugRouteImport } from './routes/articles.$slug'
 
+const RechercheRoute = RechercheRouteImport.update({
+  id: '/recherche',
+  path: '/recherche',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RadioRoute = RadioRouteImport.update({
   id: '/radio',
   path: '/radio',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProgrammesRoute = ProgrammesRouteImport.update({
+  id: '/programmes',
+  path: '/programmes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ParametresRoute = ParametresRouteImport.update({
+  id: '/parametres',
+  path: '/parametres',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NotificationsRoute = NotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MoreRoute = MoreRouteImport.update({
@@ -28,9 +53,14 @@ const MoreRoute = MoreRouteImport.update({
   path: '/more',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ArticlesRoute = ArticlesRouteImport.update({
-  id: '/articles',
-  path: '/articles',
+const FavorisRoute = FavorisRouteImport.update({
+  id: '/favoris',
+  path: '/favoris',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AproposRoute = AproposRouteImport.update({
+  id: '/apropos',
+  path: '/apropos',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -44,9 +74,9 @@ const PodcastsIndexRoute = PodcastsIndexRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const ArticlesIndexRoute = ArticlesIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => ArticlesRoute,
+  id: '/articles/',
+  path: '/articles/',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const PodcastsIdRoute = PodcastsIdRouteImport.update({
   id: '/podcasts/$id',
@@ -54,16 +84,21 @@ const PodcastsIdRoute = PodcastsIdRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const ArticlesSlugRoute = ArticlesSlugRouteImport.update({
-  id: '/$slug',
-  path: '/$slug',
-  getParentRoute: () => ArticlesRoute,
+  id: '/articles/$slug',
+  path: '/articles/$slug',
+  getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/articles': typeof ArticlesRouteWithChildren
+  '/apropos': typeof AproposRoute
+  '/favoris': typeof FavorisRoute
   '/more': typeof MoreRoute
+  '/notifications': typeof NotificationsRoute
+  '/parametres': typeof ParametresRoute
+  '/programmes': typeof ProgrammesRoute
   '/radio': typeof RadioRoute
+  '/recherche': typeof RechercheRoute
   '/articles/$slug': typeof ArticlesSlugRoute
   '/podcasts/$id': typeof PodcastsIdRoute
   '/articles/': typeof ArticlesIndexRoute
@@ -71,8 +106,14 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/apropos': typeof AproposRoute
+  '/favoris': typeof FavorisRoute
   '/more': typeof MoreRoute
+  '/notifications': typeof NotificationsRoute
+  '/parametres': typeof ParametresRoute
+  '/programmes': typeof ProgrammesRoute
   '/radio': typeof RadioRoute
+  '/recherche': typeof RechercheRoute
   '/articles/$slug': typeof ArticlesSlugRoute
   '/podcasts/$id': typeof PodcastsIdRoute
   '/articles': typeof ArticlesIndexRoute
@@ -81,9 +122,14 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/articles': typeof ArticlesRouteWithChildren
+  '/apropos': typeof AproposRoute
+  '/favoris': typeof FavorisRoute
   '/more': typeof MoreRoute
+  '/notifications': typeof NotificationsRoute
+  '/parametres': typeof ParametresRoute
+  '/programmes': typeof ProgrammesRoute
   '/radio': typeof RadioRoute
+  '/recherche': typeof RechercheRoute
   '/articles/$slug': typeof ArticlesSlugRoute
   '/podcasts/$id': typeof PodcastsIdRoute
   '/articles/': typeof ArticlesIndexRoute
@@ -93,9 +139,14 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/articles'
+    | '/apropos'
+    | '/favoris'
     | '/more'
+    | '/notifications'
+    | '/parametres'
+    | '/programmes'
     | '/radio'
+    | '/recherche'
     | '/articles/$slug'
     | '/podcasts/$id'
     | '/articles/'
@@ -103,8 +154,14 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/apropos'
+    | '/favoris'
     | '/more'
+    | '/notifications'
+    | '/parametres'
+    | '/programmes'
     | '/radio'
+    | '/recherche'
     | '/articles/$slug'
     | '/podcasts/$id'
     | '/articles'
@@ -112,9 +169,14 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
-    | '/articles'
+    | '/apropos'
+    | '/favoris'
     | '/more'
+    | '/notifications'
+    | '/parametres'
+    | '/programmes'
     | '/radio'
+    | '/recherche'
     | '/articles/$slug'
     | '/podcasts/$id'
     | '/articles/'
@@ -123,20 +185,55 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  ArticlesRoute: typeof ArticlesRouteWithChildren
+  AproposRoute: typeof AproposRoute
+  FavorisRoute: typeof FavorisRoute
   MoreRoute: typeof MoreRoute
+  NotificationsRoute: typeof NotificationsRoute
+  ParametresRoute: typeof ParametresRoute
+  ProgrammesRoute: typeof ProgrammesRoute
   RadioRoute: typeof RadioRoute
+  RechercheRoute: typeof RechercheRoute
+  ArticlesSlugRoute: typeof ArticlesSlugRoute
   PodcastsIdRoute: typeof PodcastsIdRoute
+  ArticlesIndexRoute: typeof ArticlesIndexRoute
   PodcastsIndexRoute: typeof PodcastsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/recherche': {
+      id: '/recherche'
+      path: '/recherche'
+      fullPath: '/recherche'
+      preLoaderRoute: typeof RechercheRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/radio': {
       id: '/radio'
       path: '/radio'
       fullPath: '/radio'
       preLoaderRoute: typeof RadioRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/programmes': {
+      id: '/programmes'
+      path: '/programmes'
+      fullPath: '/programmes'
+      preLoaderRoute: typeof ProgrammesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/parametres': {
+      id: '/parametres'
+      path: '/parametres'
+      fullPath: '/parametres'
+      preLoaderRoute: typeof ParametresRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/notifications': {
+      id: '/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof NotificationsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/more': {
@@ -146,11 +243,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MoreRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/articles': {
-      id: '/articles'
-      path: '/articles'
-      fullPath: '/articles'
-      preLoaderRoute: typeof ArticlesRouteImport
+    '/favoris': {
+      id: '/favoris'
+      path: '/favoris'
+      fullPath: '/favoris'
+      preLoaderRoute: typeof FavorisRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/apropos': {
+      id: '/apropos'
+      path: '/apropos'
+      fullPath: '/apropos'
+      preLoaderRoute: typeof AproposRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -169,10 +273,10 @@ declare module '@tanstack/react-router' {
     }
     '/articles/': {
       id: '/articles/'
-      path: '/'
+      path: '/articles'
       fullPath: '/articles/'
       preLoaderRoute: typeof ArticlesIndexRouteImport
-      parentRoute: typeof ArticlesRoute
+      parentRoute: typeof rootRouteImport
     }
     '/podcasts/$id': {
       id: '/podcasts/$id'
@@ -183,36 +287,39 @@ declare module '@tanstack/react-router' {
     }
     '/articles/$slug': {
       id: '/articles/$slug'
-      path: '/$slug'
+      path: '/articles/$slug'
       fullPath: '/articles/$slug'
       preLoaderRoute: typeof ArticlesSlugRouteImport
-      parentRoute: typeof ArticlesRoute
+      parentRoute: typeof rootRouteImport
     }
   }
 }
 
-interface ArticlesRouteChildren {
-  ArticlesSlugRoute: typeof ArticlesSlugRoute
-  ArticlesIndexRoute: typeof ArticlesIndexRoute
-}
-
-const ArticlesRouteChildren: ArticlesRouteChildren = {
-  ArticlesSlugRoute: ArticlesSlugRoute,
-  ArticlesIndexRoute: ArticlesIndexRoute,
-}
-
-const ArticlesRouteWithChildren = ArticlesRoute._addFileChildren(
-  ArticlesRouteChildren,
-)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  ArticlesRoute: ArticlesRouteWithChildren,
+  AproposRoute: AproposRoute,
+  FavorisRoute: FavorisRoute,
   MoreRoute: MoreRoute,
+  NotificationsRoute: NotificationsRoute,
+  ParametresRoute: ParametresRoute,
+  ProgrammesRoute: ProgrammesRoute,
   RadioRoute: RadioRoute,
+  RechercheRoute: RechercheRoute,
+  ArticlesSlugRoute: ArticlesSlugRoute,
   PodcastsIdRoute: PodcastsIdRoute,
+  ArticlesIndexRoute: ArticlesIndexRoute,
   PodcastsIndexRoute: PodcastsIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
