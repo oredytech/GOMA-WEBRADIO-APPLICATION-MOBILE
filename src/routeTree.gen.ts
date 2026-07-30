@@ -10,20 +10,17 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as RadioRouteImport } from './routes/radio'
-import { Route as PodcastsRouteImport } from './routes/podcasts'
 import { Route as MoreRouteImport } from './routes/more'
 import { Route as ArticlesRouteImport } from './routes/articles'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PodcastsIndexRouteImport } from './routes/podcasts.index'
+import { Route as ArticlesIndexRouteImport } from './routes/articles.index'
+import { Route as PodcastsIdRouteImport } from './routes/podcasts.$id'
+import { Route as ArticlesSlugRouteImport } from './routes/articles.$slug'
 
 const RadioRoute = RadioRouteImport.update({
   id: '/radio',
   path: '/radio',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PodcastsRoute = PodcastsRouteImport.update({
-  id: '/podcasts',
-  path: '/podcasts',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MoreRoute = MoreRouteImport.update({
@@ -42,56 +39,95 @@ const IndexRoute = IndexRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const PodcastsIndexRoute = PodcastsIndexRouteImport.update({
+  id: '/podcasts/',
+  path: '/podcasts/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ArticlesIndexRoute = ArticlesIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => PodcastsRoute,
+  getParentRoute: () => ArticlesRoute,
+} as any)
+const PodcastsIdRoute = PodcastsIdRouteImport.update({
+  id: '/podcasts/$id',
+  path: '/podcasts/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ArticlesSlugRoute = ArticlesSlugRouteImport.update({
+  id: '/$slug',
+  path: '/$slug',
+  getParentRoute: () => ArticlesRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/articles': typeof ArticlesRoute
+  '/articles': typeof ArticlesRouteWithChildren
   '/more': typeof MoreRoute
-  '/podcasts': typeof PodcastsRouteWithChildren
   '/radio': typeof RadioRoute
+  '/articles/$slug': typeof ArticlesSlugRoute
+  '/podcasts/$id': typeof PodcastsIdRoute
+  '/articles/': typeof ArticlesIndexRoute
   '/podcasts/': typeof PodcastsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/articles': typeof ArticlesRoute
   '/more': typeof MoreRoute
   '/radio': typeof RadioRoute
+  '/articles/$slug': typeof ArticlesSlugRoute
+  '/podcasts/$id': typeof PodcastsIdRoute
+  '/articles': typeof ArticlesIndexRoute
   '/podcasts': typeof PodcastsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/articles': typeof ArticlesRoute
+  '/articles': typeof ArticlesRouteWithChildren
   '/more': typeof MoreRoute
-  '/podcasts': typeof PodcastsRouteWithChildren
   '/radio': typeof RadioRoute
+  '/articles/$slug': typeof ArticlesSlugRoute
+  '/podcasts/$id': typeof PodcastsIdRoute
+  '/articles/': typeof ArticlesIndexRoute
   '/podcasts/': typeof PodcastsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/articles' | '/more' | '/podcasts' | '/radio' | '/podcasts/'
+  fullPaths:
+    | '/'
+    | '/articles'
+    | '/more'
+    | '/radio'
+    | '/articles/$slug'
+    | '/podcasts/$id'
+    | '/articles/'
+    | '/podcasts/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/articles' | '/more' | '/radio' | '/podcasts'
+  to:
+    | '/'
+    | '/more'
+    | '/radio'
+    | '/articles/$slug'
+    | '/podcasts/$id'
+    | '/articles'
+    | '/podcasts'
   id:
     | '__root__'
     | '/'
     | '/articles'
     | '/more'
-    | '/podcasts'
     | '/radio'
+    | '/articles/$slug'
+    | '/podcasts/$id'
+    | '/articles/'
     | '/podcasts/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  ArticlesRoute: typeof ArticlesRoute
+  ArticlesRoute: typeof ArticlesRouteWithChildren
   MoreRoute: typeof MoreRoute
-  PodcastsRoute: typeof PodcastsRouteWithChildren
   RadioRoute: typeof RadioRoute
+  PodcastsIdRoute: typeof PodcastsIdRoute
+  PodcastsIndexRoute: typeof PodcastsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -101,13 +137,6 @@ declare module '@tanstack/react-router' {
       path: '/radio'
       fullPath: '/radio'
       preLoaderRoute: typeof RadioRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/podcasts': {
-      id: '/podcasts'
-      path: '/podcasts'
-      fullPath: '/podcasts'
-      preLoaderRoute: typeof PodcastsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/more': {
@@ -133,32 +162,56 @@ declare module '@tanstack/react-router' {
     }
     '/podcasts/': {
       id: '/podcasts/'
-      path: '/'
+      path: '/podcasts'
       fullPath: '/podcasts/'
       preLoaderRoute: typeof PodcastsIndexRouteImport
-      parentRoute: typeof PodcastsRoute
+      parentRoute: typeof rootRouteImport
+    }
+    '/articles/': {
+      id: '/articles/'
+      path: '/'
+      fullPath: '/articles/'
+      preLoaderRoute: typeof ArticlesIndexRouteImport
+      parentRoute: typeof ArticlesRoute
+    }
+    '/podcasts/$id': {
+      id: '/podcasts/$id'
+      path: '/podcasts/$id'
+      fullPath: '/podcasts/$id'
+      preLoaderRoute: typeof PodcastsIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/articles/$slug': {
+      id: '/articles/$slug'
+      path: '/$slug'
+      fullPath: '/articles/$slug'
+      preLoaderRoute: typeof ArticlesSlugRouteImport
+      parentRoute: typeof ArticlesRoute
     }
   }
 }
 
-interface PodcastsRouteChildren {
-  PodcastsIndexRoute: typeof PodcastsIndexRoute
+interface ArticlesRouteChildren {
+  ArticlesSlugRoute: typeof ArticlesSlugRoute
+  ArticlesIndexRoute: typeof ArticlesIndexRoute
 }
 
-const PodcastsRouteChildren: PodcastsRouteChildren = {
-  PodcastsIndexRoute: PodcastsIndexRoute,
+const ArticlesRouteChildren: ArticlesRouteChildren = {
+  ArticlesSlugRoute: ArticlesSlugRoute,
+  ArticlesIndexRoute: ArticlesIndexRoute,
 }
 
-const PodcastsRouteWithChildren = PodcastsRoute._addFileChildren(
-  PodcastsRouteChildren,
+const ArticlesRouteWithChildren = ArticlesRoute._addFileChildren(
+  ArticlesRouteChildren,
 )
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  ArticlesRoute: ArticlesRoute,
+  ArticlesRoute: ArticlesRouteWithChildren,
   MoreRoute: MoreRoute,
-  PodcastsRoute: PodcastsRouteWithChildren,
   RadioRoute: RadioRoute,
+  PodcastsIdRoute: PodcastsIdRoute,
+  PodcastsIndexRoute: PodcastsIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
