@@ -142,3 +142,44 @@
     color: var(--color-foreground);
   }
 }
+
+/* ---- GOMA WEBRADIO design tokens (consumed by the Tailwind runtime config) ---- */
+:root {
+  --gw-paper: 248 250 252;
+  --gw-panel: 255 255 255;
+  --gw-panel-2: 238 244 250;
+  --gw-ink: 1 27 64;
+  --gw-ink-mute: 92 112 140;
+  --gw-line: 219 230 240;
+  --gw-brand: 41 171 226;
+  --gw-brand-deep: 1 27 64;
+  --gw-blood: 200 20 39;
+  color-scheme: light;
+}
+
+.dark {
+  --gw-paper: 1 20 47;
+  --gw-panel: 4 34 74;
+  --gw-panel-2: 8 48 100;
+  --gw-ink: 233 241 250;
+  --gw-ink-mute: 150 176 205;
+  --gw-line: 17 61 116;
+  --gw-brand: 41 171 226;
+  --gw-brand-deep: 1 27 64;
+  --gw-blood: 227 42 61;
+  color-scheme: dark;
+}
+
+html, body { background-color: rgb(var(--gw-paper)); color: rgb(var(--gw-ink)); }
+body { font-family: "Funnel Sans", system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
+
+.gw-scroll-x { scrollbar-width: none; }
+.gw-scroll-x::-webkit-scrollbar { display: none; }
+
+.gw-article-content { font-size: 1rem; line-height: 1.75; }
+.gw-article-content p { margin-bottom: 1rem; }
+.gw-article-content h2, .gw-article-content h3 { font-family: "Funnel Display", sans-serif; font-weight: 700; margin: 1.25rem 0 .5rem; }
+.gw-article-content img { border-radius: 1rem; margin: 1rem 0; width: 100%; height: auto; }
+.gw-article-content a { color: rgb(var(--gw-brand)); text-decoration: underline; }
+.gw-article-content ul { list-style: disc; padding-left: 1.25rem; margin-bottom: 1rem; }
+.gw-article-content iframe { width: 100%; border-radius: 1rem; aspect-ratio: 16/9; }

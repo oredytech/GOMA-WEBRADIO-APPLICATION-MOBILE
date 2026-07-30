@@ -12,24 +12,30 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { tailwindConfigScript } from "../lib/tw-config";
+import { PlayerProvider } from "../context/player";
+
+const themeBootScript = `
+try {
+  var t = localStorage.getItem("gw-theme");
+  if (t === "dark" || (!t && window.matchMedia("(prefers-color-scheme: dark)").matches)) {
+    document.documentElement.classList.add("dark");
+  }
+} catch (e) {}
+`;
 
 function NotFoundComponent() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-surface px-4">
+    <div className="flex min-h-screen items-center justify-center bg-paper px-6">
       <div className="max-w-md text-center">
-        <h1 className="text-7xl font-bold text-primary">404</h1>
-        <h2 className="mt-4 text-xl font-semibold text-on-surface">Page introuvable</h2>
-        <p className="mt-2 text-sm text-on-surface-variant">
-          Cette page n'existe pas ou a été déplacée.
-        </p>
-        <div className="mt-6">
-          <Link
-            to="/"
-            className="inline-flex items-center justify-center rounded-full bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-container"
-          >
-            Accueil
-          </Link>
-        </div>
+        <h1 className="font-display text-7xl font-extrabold text-brand">404</h1>
+        <h2 className="mt-4 text-xl font-semibold text-ink">Page introuvable</h2>
+        <p className="mt-2 text-sm text-inkmute">Cette page n'existe pas ou a été déplacée.</p>
+        <Link
+          to="/"
+          className="mt-6 inline-flex items-center justify-center rounded-full bg-brand px-5 py-2.5 text-sm font-semibold text-white"
+        >
+          Accueil
+        </Link>
       </div>
     </div>
   );
@@ -43,25 +49,18 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   }, [error]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-surface px-4">
+    <div className="flex min-h-screen items-center justify-center bg-paper px-6">
       <div className="max-w-md text-center">
-        <h1 className="text-xl font-semibold tracking-tight text-on-surface">
-          Cette page ne s'est pas chargée
-        </h1>
-        <p className="mt-2 text-sm text-on-surface-variant">
-          Une erreur est survenue. Réessayez ou revenez à l'accueil.
-        </p>
+        <h1 className="font-display text-xl font-bold text-ink">Cette page ne s'est pas chargée</h1>
+        <p className="mt-2 text-sm text-inkmute">Une erreur est survenue. Réessayez.</p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
             onClick={() => { router.invalidate(); reset(); }}
-            className="inline-flex items-center justify-center rounded-full bg-primary px-4 py-2 text-sm font-medium text-white"
+            className="rounded-full bg-brand px-5 py-2.5 text-sm font-semibold text-white"
           >
             Réessayer
           </button>
-          <a
-            href="/"
-            className="inline-flex items-center justify-center rounded-full border border-outline-variant bg-surface px-4 py-2 text-sm font-medium text-on-surface"
-          >
+          <a href="/" className="rounded-full border border-line px-5 py-2.5 text-sm font-semibold text-ink">
             Accueil
           </a>
         </div>
@@ -74,9 +73,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
+      { name: "theme-color", content: "#011b40" },
       { title: "GOMA WEBRADIO — La voix de Goma en direct" },
-      { name: "description", content: "Écoutez GOMA WEBRADIO en direct : actualités, podcasts et émissions culturelles du Nord-Kivu." },
+      {
+        name: "description",
+        content:
+          "Écoutez GOMA WEBRADIO en direct : radio live, podcasts et actualités du Nord-Kivu et de la RDC.",
+      },
       { property: "og:title", content: "GOMA WEBRADIO" },
       { property: "og:description", content: "Radio, podcasts et actualités depuis Goma, RDC." },
       { property: "og:type", content: "website" },
@@ -89,7 +93,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Funnel+Display:wght@400;500;600;700;800&family=Funnel+Sans:ital,wght@0,300..800;1,300..800&display=swap",
       },
       {
         rel: "stylesheet",
@@ -97,7 +101,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
     ],
     scripts: [
-      // Set Tailwind config BEFORE the CDN script loads
+      { children: themeBootScript },
       { children: tailwindConfigScript },
       { src: "https://cdn.tailwindcss.com?plugins=forms,container-queries" },
     ],
@@ -110,11 +114,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="fr">
+    <html lang="fr" suppressHydrationWarning>
       <head>
         <HeadContent />
       </head>
-      <body className="font-body-lg bg-surface text-on-surface">
+      <body className="bg-paper text-ink antialiased">
         {children}
         <Scripts />
       </body>
@@ -127,7 +131,9 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <Outlet />
+      <PlayerProvider>
+        <Outlet />
+      </PlayerProvider>
     </QueryClientProvider>
   );
 }
