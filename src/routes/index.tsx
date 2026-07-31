@@ -33,8 +33,10 @@ function Home() {
   const { track, playing, loading, toggle } = usePlayer();
   const { data: articles } = useSuspenseQuery(articlesQuery({ perPage: 6 }));
   const { data: show } = useSuspenseQuery(podcastQuery());
-  const live = currentShow();
+  const { show: live } = useSchedule();
   const isLive = track?.kind === "radio" && playing;
+  const isLoadingLive = track?.kind === "radio" && loading;
+
 
   return (
     <Screen>
