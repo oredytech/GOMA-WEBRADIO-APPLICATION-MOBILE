@@ -99,11 +99,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         href: "https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0..1,0&display=swap",
       },
     ],
-    scripts: [
-      { children: themeBootScript },
-      { children: tailwindConfigScript },
-      { src: "https://cdn.tailwindcss.com?plugins=forms,container-queries" },
-    ],
+    scripts: [{ children: themeBootScript }],
+
   }),
   shellComponent: RootShell,
   component: RootComponent,
