@@ -41,15 +41,15 @@ function Radio() {
   }, [toast]);
 
   return (
-    <div className="relative min-h-screen">
+    <div className="relative isolate min-h-screen bg-[#01142f]">
       {/* Image de fond plein écran */}
-      <div className="fixed inset-0 -z-10">
+      <div className="fixed inset-0 z-0">
         <img src={playBg.url} alt="" aria-hidden className="h-full w-full object-cover object-center" />
         <div className="absolute inset-0 bg-gradient-to-t from-[#01142f] via-[#01142f]/85 to-[#01142f]/35" />
       </div>
 
       {/* Barre supérieure */}
-      <header className="mx-auto flex h-16 w-full max-w-2xl items-center justify-between px-5">
+      <header className="relative z-10 mx-auto flex h-16 w-full max-w-2xl items-center justify-between px-5">
         <Link
           to="/"
           aria-label="Retour à l'accueil"
@@ -71,7 +71,7 @@ function Radio() {
         </button>
       </header>
 
-      <main className="mx-auto w-full max-w-2xl px-5 pb-44 pt-6">
+      <main className="relative z-10 mx-auto w-full max-w-2xl px-5 pb-44 pt-6">
         {/* Pochette / égaliseur */}
         <div className="mx-auto flex aspect-square w-full max-w-[300px] items-center justify-center rounded-3xl bg-white/10 shadow-lift ring-1 ring-white/15 backdrop-blur-md">
           <div className="flex h-24 items-end gap-2">
