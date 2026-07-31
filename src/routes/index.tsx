@@ -190,7 +190,7 @@ function Home() {
               className="flex gap-3 rounded-2xl border border-line bg-panel p-3 shadow-soft active:scale-[0.99]"
             >
               <div className="h-20 w-24 shrink-0 overflow-hidden rounded-xl bg-panel2">
-                {a.image && <img src={a.image} alt={a.title} className="h-full w-full object-cover" loading="lazy" />}
+                <SmartImage src={a.image} alt={a.title} className="h-full w-full object-cover" />
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-[11px] font-bold uppercase tracking-wide text-brand">{a.category}</p>

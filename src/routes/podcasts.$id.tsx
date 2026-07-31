@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
+import { SmartImage } from "@/components/SmartImage";
 import { Screen } from "@/components/Screen";
 import { podcastQuery } from "@/lib/queries";
 import { usePlayer } from "@/context/player";
@@ -41,7 +42,7 @@ function EpisodePage() {
     <Screen title="Épisode" back>
       <div className="pt-4">
         <div className="overflow-hidden rounded-2xl bg-panel2 shadow-lift">
-          {ep.image && <img src={ep.image} alt={ep.title} className="aspect-square w-full object-cover" />}
+          <SmartImage src={ep.image} alt={ep.title} className="aspect-square w-full object-cover" loading="eager" fallbackClassName="aspect-square w-full bg-brand-deep object-contain p-12" />
         </div>
         <h1 className="mt-4 font-display text-xl font-extrabold leading-tight text-ink">{ep.title}</h1>
         <p className="mt-1 text-xs text-inkmute">
@@ -85,7 +86,7 @@ function EpisodePage() {
           {show.episodes.filter((e) => e.id !== ep.id).slice(0, 6).map((e) => (
             <Link key={e.id} to="/podcasts/$id" params={{ id: e.id }} className="flex gap-3 rounded-2xl border border-line bg-panel p-3 shadow-soft active:scale-[0.99]">
               <div className="h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-panel2">
-                {e.image && <img src={e.image} alt={e.title} className="h-full w-full object-cover" loading="lazy" />}
+                <SmartImage src={e.image} alt={e.title} className="h-full w-full object-cover" />
               </div>
               <div className="min-w-0 flex-1">
                 <h3 className="line-clamp-2 text-sm font-bold text-ink">{e.title}</h3>

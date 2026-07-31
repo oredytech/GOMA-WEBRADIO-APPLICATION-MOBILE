@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
+import { SmartImage } from "@/components/SmartImage";
 import { Screen } from "@/components/Screen";
 import { articlesQuery } from "@/lib/queries";
 import { formatDate } from "@/lib/format";
@@ -26,7 +27,7 @@ function Articles() {
         {articles.map((a) => (
           <article key={a.id} className="overflow-hidden rounded-2xl border border-line bg-panel shadow-soft">
             <Link to="/articles/$slug" params={{ slug: a.slug }}>
-              {a.image && <img src={a.image} alt={a.title} className="h-48 w-full object-cover" loading="lazy" />}
+              <SmartImage src={a.image} alt={a.title} className="h-48 w-full object-cover" fallbackClassName="h-48 w-full bg-brand-deep object-contain p-8" />
               <div className="p-4">
                 <p className="text-[11px] font-bold uppercase tracking-wide text-brand">{a.category}</p>
                 <h2 className="mt-1 font-display text-base font-extrabold leading-snug text-ink">{a.title}</h2>

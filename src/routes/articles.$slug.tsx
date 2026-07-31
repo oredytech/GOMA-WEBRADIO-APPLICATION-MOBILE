@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
+import { SmartImage } from "@/components/SmartImage";
 import { Screen } from "@/components/Screen";
 import { articleQuery } from "@/lib/queries";
 import { formatDate, shareContent } from "@/lib/format";
@@ -44,9 +45,7 @@ function ArticlePage() {
   return (
     <Screen title="Article" back>
       <article className="pt-4">
-        {article.image && (
-          <img src={article.image} alt={article.title} className="h-56 w-full rounded-2xl object-cover shadow-soft" />
-        )}
+        <SmartImage src={article.image} alt={article.title} className="h-56 w-full rounded-2xl object-cover shadow-soft" fallbackClassName="h-56 w-full rounded-2xl bg-brand-deep object-contain p-10 shadow-soft" />
         <p className="mt-4 text-[11px] font-bold uppercase tracking-wide text-brand">{article.category}</p>
         <h1 className="mt-1 font-display text-2xl font-extrabold leading-tight text-ink">{article.title}</h1>
         <div className="mt-2 flex flex-wrap items-center gap-x-2 text-xs text-inkmute">
