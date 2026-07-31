@@ -62,7 +62,8 @@ function Radio() {
           aria-label="Partager la radio"
           onClick={async () => {
             const r = await shareContent({ title: "GOMA WEBRADIO en direct" });
-            setToast(r === "copied" ? "Lien copié" : r === "shared" ? "Partagé" : "Partage indisponible");
+            if (r === "copied") setToast("Lien copié");
+            else if (r === "shared") setToast("Partagé");
           }}
           className="flex h-10 w-10 items-center justify-center rounded-full bg-white/15 text-white backdrop-blur active:scale-95"
         >
