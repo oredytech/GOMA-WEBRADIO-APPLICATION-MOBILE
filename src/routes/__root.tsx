@@ -11,17 +11,16 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
-import { tailwindConfigScript } from "../lib/tw-config";
 import { PlayerProvider } from "../context/player";
 
 const themeBootScript = `
 try {
-  var t = localStorage.getItem("gw-theme");
-  if (t === "dark" || (!t && window.matchMedia("(prefers-color-scheme: dark)").matches)) {
+  if (localStorage.getItem("gw-theme") === "dark") {
     document.documentElement.classList.add("dark");
   }
 } catch (e) {}
 `;
+
 
 function NotFoundComponent() {
   return (
