@@ -124,17 +124,36 @@ function Home() {
       <section className="mt-7">
         <SectionHeader title="Podcasts récents" />
         <div className="gw-scroll-x -mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-2">
-          {show.episodes.slice(0, 8).map((ep) => (
-            <article key={ep.id} className="w-40 shrink-0 snap-start">
-              <Link to="/podcasts/$id" params={{ id: ep.id }} className="block">
+          {show.episodes.slice(0, 8).map((ep) => {
+            const epPlaying = track?.id === ep.id && playing;
+            const epLoading = track?.id === ep.id && loading;
+            return (
+              <article key={ep.id} className="w-40 shrink-0 snap-start">
                 <div className="relative aspect-square overflow-hidden rounded-2xl bg-panel2 shadow-soft">
-                  {ep.image && <img src={ep.image} alt={ep.title} className="h-full w-full object-cover" loading="lazy" />}
+                  <Link to="/podcasts/$id" params={{ id: ep.id }} className="block h-full w-full">
+                    <SmartImage src={ep.image} alt={ep.title} className="h-full w-full object-cover" />
+                  </Link>
+                  <button
+                    aria-label={epPlaying ? `Pause ${ep.title}` : `Écouter ${ep.title}`}
+                    onClick={() =>
+                      toggle({ id: ep.id, kind: "podcast", title: ep.title, subtitle: ep.author, artwork: ep.image, src: ep.audio })
+                    }
+                    className="absolute bottom-2 right-2 flex h-11 w-11 items-center justify-center rounded-full bg-blood text-white shadow-lift active:scale-95"
+                  >
+                    <span
+                      className={"material-symbols-outlined " + (epLoading ? "animate-spin" : "")}
+                      style={{ fontSize: 24, fontVariationSettings: "'FILL' 1" }}
+                    >
+                      {epLoading ? "progress_activity" : epPlaying ? "pause" : "play_arrow"}
+                    </span>
+                  </button>
                 </div>
-              </Link>
-              <h3 className="mt-2 line-clamp-2 text-sm font-bold leading-snug text-ink">{ep.title}</h3>
-              <p className="mt-0.5 text-xs text-inkmute">{prettyDuration(ep.duration)}</p>
-            </article>
-          ))}
+                <h3 className="mt-2 line-clamp-2 text-sm font-bold leading-snug text-ink">{ep.title}</h3>
+                <p className="mt-0.5 text-xs text-inkmute">{prettyDuration(ep.duration)}</p>
+              </article>
+            );
+          })}
+
           {show.episodes.length === 0 && (
             <p className="text-sm text-inkmute">Podcasts indisponibles pour le moment.</p>
           )}
