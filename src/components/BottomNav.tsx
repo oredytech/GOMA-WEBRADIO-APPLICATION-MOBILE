@@ -14,7 +14,8 @@ export function BottomNav() {
   const { pathname } = useLocation();
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-line bg-panel/95 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-2xl items-stretch justify-between gap-1 px-3 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2">
+      <div className="mx-auto flex min-h-[64px] max-w-2xl items-stretch justify-between gap-1 px-3 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2">
+
         {items.map((it) => {
           const active = it.to === "/" ? pathname === "/" : pathname.startsWith(it.to);
           return (
