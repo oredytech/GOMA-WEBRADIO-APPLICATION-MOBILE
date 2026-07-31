@@ -1,11 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Screen, SectionHeader } from "@/components/Screen";
+import { SmartImage } from "@/components/SmartImage";
 import { LIVE_TRACK, usePlayer } from "@/context/player";
 import { articlesQuery, podcastQuery } from "@/lib/queries";
 import { prettyDuration, relativeDate, shareContent } from "@/lib/format";
-import { currentShow } from "@/lib/programs";
+import { useSchedule } from "@/hooks/useSchedule";
 import playBg from "@/assets/play-bg.webp.asset.json";
+
 
 export const Route = createFileRoute("/")({
   component: Home,
