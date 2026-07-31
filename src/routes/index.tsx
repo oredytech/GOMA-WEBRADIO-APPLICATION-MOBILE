@@ -51,9 +51,11 @@ function Home() {
             </span>
             <div>
               <h2 className="font-display text-2xl font-extrabold leading-tight text-white">
-                {live.name}
+                {live?.name ?? "GOMA WEBRADIO"}
               </h2>
-              <p className="text-sm text-white/80">Avec {live.host}</p>
+              <p className="text-sm text-white/80">
+                {live ? `Avec ${live.host}` : "La voix de Goma, 24h/24"}
+              </p>
             </div>
             <div className="flex items-center gap-3">
               <button
@@ -62,12 +64,13 @@ function Home() {
                 className="flex h-16 w-16 items-center justify-center rounded-full bg-blood text-white shadow-lift transition-transform active:scale-95"
               >
                 <span
-                  className="material-symbols-outlined"
+                  className={"material-symbols-outlined " + (isLoadingLive ? "animate-spin" : "")}
                   style={{ fontSize: 34, fontVariationSettings: "'FILL' 1" }}
                 >
-                  {loading && track?.kind === "radio" ? "hourglass_empty" : isLive ? "pause" : "play_arrow"}
+                  {isLoadingLive ? "progress_activity" : isLive ? "pause" : "play_arrow"}
                 </span>
               </button>
+
               <div className="flex h-10 items-end gap-1">
                 {[0, 1, 2, 3, 4].map((i) => (
                   <span
