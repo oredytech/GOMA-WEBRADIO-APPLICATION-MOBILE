@@ -11,17 +11,16 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
-import { tailwindConfigScript } from "../lib/tw-config";
 import { PlayerProvider } from "../context/player";
 
 const themeBootScript = `
 try {
-  var t = localStorage.getItem("gw-theme");
-  if (t === "dark" || (!t && window.matchMedia("(prefers-color-scheme: dark)").matches)) {
+  if (localStorage.getItem("gw-theme") === "dark") {
     document.documentElement.classList.add("dark");
   }
 } catch (e) {}
 `;
+
 
 function NotFoundComponent() {
   return (
@@ -100,11 +99,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         href: "https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0..1,0&display=swap",
       },
     ],
-    scripts: [
-      { children: themeBootScript },
-      { children: tailwindConfigScript },
-      { src: "https://cdn.tailwindcss.com?plugins=forms,container-queries" },
-    ],
+    scripts: [{ children: themeBootScript }],
+
   }),
   shellComponent: RootShell,
   component: RootComponent,

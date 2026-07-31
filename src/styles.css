@@ -19,7 +19,23 @@
  */
 
 @theme inline {
+  --color-paper: var(--gw-paper);
+  --color-panel: var(--gw-panel);
+  --color-panel2: var(--gw-panel-2);
+  --color-ink: var(--gw-ink);
+  --color-inkmute: var(--gw-ink-mute);
+  --color-line: var(--gw-line);
+  --color-brand: var(--gw-brand);
+  --color-brand-deep: var(--gw-brand-deep);
+  --color-blood: var(--gw-blood);
+  --font-display: "Funnel Display", system-ui, sans-serif;
+  --font-sans: "Funnel Sans", system-ui, sans-serif;
+  --shadow-soft: 0 6px 24px -12px rgb(1 27 64 / 0.25);
+  --shadow-lift: 0 18px 40px -20px rgb(1 27 64 / 0.45);
+  --animate-fade-up: fade-up 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  --animate-eq: eq 1s ease-in-out infinite;
   --radius-sm: calc(var(--radius) - 4px);
+
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
@@ -143,35 +159,45 @@
   }
 }
 
-/* ---- GOMA WEBRADIO design tokens (consumed by the Tailwind runtime config) ---- */
+/* ---- GOMA WEBRADIO design tokens ---- */
 :root {
-  --gw-paper: 248 250 252;
-  --gw-panel: 255 255 255;
-  --gw-panel-2: 238 244 250;
-  --gw-ink: 1 27 64;
-  --gw-ink-mute: 92 112 140;
-  --gw-line: 219 230 240;
-  --gw-brand: 41 171 226;
-  --gw-brand-deep: 1 27 64;
-  --gw-blood: 200 20 39;
+  --gw-paper: #f6f9fc;
+  --gw-panel: #ffffff;
+  --gw-panel-2: #eaf2f9;
+  --gw-ink: #011b40;
+  --gw-ink-mute: #4d6b8c;
+  --gw-line: #dbe6f0;
+  --gw-brand: #29abe2;
+  --gw-brand-deep: #011b40;
+  --gw-blood: #c8142a;
   color-scheme: light;
 }
 
 .dark {
-  --gw-paper: 1 20 47;
-  --gw-panel: 4 34 74;
-  --gw-panel-2: 8 48 100;
-  --gw-ink: 233 241 250;
-  --gw-ink-mute: 150 176 205;
-  --gw-line: 17 61 116;
-  --gw-brand: 41 171 226;
-  --gw-brand-deep: 1 27 64;
-  --gw-blood: 227 42 61;
+  --gw-paper: #01142f;
+  --gw-panel: #04224a;
+  --gw-panel-2: #083064;
+  --gw-ink: #e9f1fa;
+  --gw-ink-mute: #9ab5d1;
+  --gw-line: #113d74;
+  --gw-brand: #29abe2;
+  --gw-brand-deep: #011b40;
+  --gw-blood: #e32a3d;
   color-scheme: dark;
 }
 
-html, body { background-color: rgb(var(--gw-paper)); color: rgb(var(--gw-ink)); }
+html, body { background-color: var(--gw-paper); color: var(--gw-ink); }
 body { font-family: "Funnel Sans", system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
+
+@keyframes fade-up {
+  0% { opacity: 0; transform: translateY(10px); }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes eq {
+  0%, 100% { transform: scaleY(0.35); }
+  50% { transform: scaleY(1); }
+}
+
 
 .gw-scroll-x { scrollbar-width: none; }
 .gw-scroll-x::-webkit-scrollbar { display: none; }
@@ -180,6 +206,6 @@ body { font-family: "Funnel Sans", system-ui, sans-serif; -webkit-tap-highlight-
 .gw-article-content p { margin-bottom: 1rem; }
 .gw-article-content h2, .gw-article-content h3 { font-family: "Funnel Display", sans-serif; font-weight: 700; margin: 1.25rem 0 .5rem; }
 .gw-article-content img { border-radius: 1rem; margin: 1rem 0; width: 100%; height: auto; }
-.gw-article-content a { color: rgb(var(--gw-brand)); text-decoration: underline; }
+.gw-article-content a { color: var(--gw-brand); text-decoration: underline; }
 .gw-article-content ul { list-style: disc; padding-left: 1.25rem; margin-bottom: 1rem; }
 .gw-article-content iframe { width: 100%; border-radius: 1rem; aspect-ratio: 16/9; }

@@ -1,11 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Screen, SectionHeader } from "@/components/Screen";
+import { SmartImage } from "@/components/SmartImage";
 import { LIVE_TRACK, usePlayer } from "@/context/player";
 import { articlesQuery, podcastQuery } from "@/lib/queries";
 import { prettyDuration, relativeDate, shareContent } from "@/lib/format";
-import { currentShow } from "@/lib/programs";
+import { useSchedule } from "@/hooks/useSchedule";
 import playBg from "@/assets/play-bg.webp.asset.json";
+
 
 export const Route = createFileRoute("/")({
   component: Home,
@@ -31,8 +33,10 @@ function Home() {
   const { track, playing, loading, toggle } = usePlayer();
   const { data: articles } = useSuspenseQuery(articlesQuery({ perPage: 6 }));
   const { data: show } = useSuspenseQuery(podcastQuery());
-  const live = currentShow();
+  const { show: live } = useSchedule();
   const isLive = track?.kind === "radio" && playing;
+  const isLoadingLive = track?.kind === "radio" && loading;
+
 
   return (
     <Screen>
@@ -47,9 +51,11 @@ function Home() {
             </span>
             <div>
               <h2 className="font-display text-2xl font-extrabold leading-tight text-white">
-                {live.name}
+                {live?.name ?? "GOMA WEBRADIO"}
               </h2>
-              <p className="text-sm text-white/80">Avec {live.host}</p>
+              <p className="text-sm text-white/80">
+                {live ? `Avec ${live.host}` : "La voix de Goma, 24h/24"}
+              </p>
             </div>
             <div className="flex items-center gap-3">
               <button
@@ -58,12 +64,13 @@ function Home() {
                 className="flex h-16 w-16 items-center justify-center rounded-full bg-blood text-white shadow-lift transition-transform active:scale-95"
               >
                 <span
-                  className="material-symbols-outlined"
+                  className={"material-symbols-outlined " + (isLoadingLive ? "animate-spin" : "")}
                   style={{ fontSize: 34, fontVariationSettings: "'FILL' 1" }}
                 >
-                  {loading && track?.kind === "radio" ? "hourglass_empty" : isLive ? "pause" : "play_arrow"}
+                  {isLoadingLive ? "progress_activity" : isLive ? "pause" : "play_arrow"}
                 </span>
               </button>
+
               <div className="flex h-10 items-end gap-1">
                 {[0, 1, 2, 3, 4].map((i) => (
                   <span
@@ -117,17 +124,36 @@ function Home() {
       <section className="mt-7">
         <SectionHeader title="Podcasts récents" />
         <div className="gw-scroll-x -mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-2">
-          {show.episodes.slice(0, 8).map((ep) => (
-            <article key={ep.id} className="w-40 shrink-0 snap-start">
-              <Link to="/podcasts/$id" params={{ id: ep.id }} className="block">
+          {show.episodes.slice(0, 8).map((ep) => {
+            const epPlaying = track?.id === ep.id && playing;
+            const epLoading = track?.id === ep.id && loading;
+            return (
+              <article key={ep.id} className="w-40 shrink-0 snap-start">
                 <div className="relative aspect-square overflow-hidden rounded-2xl bg-panel2 shadow-soft">
-                  {ep.image && <img src={ep.image} alt={ep.title} className="h-full w-full object-cover" loading="lazy" />}
+                  <Link to="/podcasts/$id" params={{ id: ep.id }} className="block h-full w-full">
+                    <SmartImage src={ep.image} alt={ep.title} className="h-full w-full object-cover" />
+                  </Link>
+                  <button
+                    aria-label={epPlaying ? `Pause ${ep.title}` : `Écouter ${ep.title}`}
+                    onClick={() =>
+                      toggle({ id: ep.id, kind: "podcast", title: ep.title, subtitle: ep.author, artwork: ep.image, src: ep.audio })
+                    }
+                    className="absolute bottom-2 right-2 flex h-11 w-11 items-center justify-center rounded-full bg-blood text-white shadow-lift active:scale-95"
+                  >
+                    <span
+                      className={"material-symbols-outlined " + (epLoading ? "animate-spin" : "")}
+                      style={{ fontSize: 24, fontVariationSettings: "'FILL' 1" }}
+                    >
+                      {epLoading ? "progress_activity" : epPlaying ? "pause" : "play_arrow"}
+                    </span>
+                  </button>
                 </div>
-              </Link>
-              <h3 className="mt-2 line-clamp-2 text-sm font-bold leading-snug text-ink">{ep.title}</h3>
-              <p className="mt-0.5 text-xs text-inkmute">{prettyDuration(ep.duration)}</p>
-            </article>
-          ))}
+                <h3 className="mt-2 line-clamp-2 text-sm font-bold leading-snug text-ink">{ep.title}</h3>
+                <p className="mt-0.5 text-xs text-inkmute">{prettyDuration(ep.duration)}</p>
+              </article>
+            );
+          })}
+
           {show.episodes.length === 0 && (
             <p className="text-sm text-inkmute">Podcasts indisponibles pour le moment.</p>
           )}
@@ -164,7 +190,7 @@ function Home() {
               className="flex gap-3 rounded-2xl border border-line bg-panel p-3 shadow-soft active:scale-[0.99]"
             >
               <div className="h-20 w-24 shrink-0 overflow-hidden rounded-xl bg-panel2">
-                {a.image && <img src={a.image} alt={a.title} className="h-full w-full object-cover" loading="lazy" />}
+                <SmartImage src={a.image} alt={a.title} className="h-full w-full object-cover" />
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-[11px] font-bold uppercase tracking-wide text-brand">{a.category}</p>

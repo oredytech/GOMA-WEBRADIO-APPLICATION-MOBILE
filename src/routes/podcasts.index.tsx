@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
+import { SmartImage } from "@/components/SmartImage";
 import { Screen } from "@/components/Screen";
 import { podcastQuery } from "@/lib/queries";
 import { usePlayer } from "@/context/player";
@@ -72,7 +73,7 @@ function Podcasts() {
 
       <section className="mt-5 flex items-center gap-4 rounded-2xl border border-line bg-panel p-4 shadow-soft">
         <div className="h-20 w-20 shrink-0 overflow-hidden rounded-2xl bg-panel2">
-          {show.image && <img src={show.image} alt={show.title} className="h-full w-full object-cover" />}
+          <SmartImage src={show.image} alt={show.title} className="h-full w-full object-cover" loading="eager" />
         </div>
         <div className="min-w-0">
           <h2 className="truncate font-display text-lg font-extrabold text-ink">{show.title}</h2>
@@ -90,7 +91,7 @@ function Podcasts() {
             <article key={ep.id} className="rounded-2xl border border-line bg-panel p-3 shadow-soft">
               <div className="flex gap-3">
                 <Link to="/podcasts/$id" params={{ id: ep.id }} className="h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-panel2">
-                  {ep.image && <img src={ep.image} alt={ep.title} className="h-full w-full object-cover" loading="lazy" />}
+                  <SmartImage src={ep.image} alt={ep.title} className="h-full w-full object-cover" />
                 </Link>
                 <div className="min-w-0 flex-1">
                   <Link to="/podcasts/$id" params={{ id: ep.id }}>
