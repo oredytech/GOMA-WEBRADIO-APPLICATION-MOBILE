@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Screen } from "@/components/Screen";
-import logo from "@/assets/logo.png.asset.json";
+import { LOGO_URL } from "@/lib/media";
 
 export const Route = createFileRoute("/more")({
   component: More,
@@ -27,7 +27,7 @@ function More() {
   return (
     <Screen title="Plus">
       <div className="mt-4 flex items-center gap-3 rounded-2xl border border-line bg-panel p-4 shadow-soft">
-        <img src={logo.url} alt="GOMA WEBRADIO" className="h-14 w-14 shrink-0 rounded-2xl bg-[#011b40] object-contain p-2" />
+        <img src={LOGO_URL} alt="GOMA WEBRADIO" className="h-14 w-14 shrink-0 rounded-2xl bg-[#011b40] object-contain p-2" />
         <div className="min-w-0">
           <h2 className="truncate font-display text-lg font-extrabold text-ink">GOMA WEBRADIO</h2>
           <p className="truncate text-xs text-inkmute">La voix de Goma · Nord-Kivu, RDC</p>

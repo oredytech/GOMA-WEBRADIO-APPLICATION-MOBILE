@@ -10,7 +10,7 @@ export type Show = {
 export const schedule: Record<string, Show[]> = {
   Lundi: [
     { time: "05:00", end: "09:00", name: "Le Grand Réveil", host: "Mama Goma", description: "Matinale d'information et musique", tag: "Matinale" },
-    { time: "09:00", end: "11:00", name: "Sauti ya Amani", host: "John Tsongo", description: "Magazine paix & cohésion sociale", tag: "Magazine" },
+    { time: "09:00", end: "11:00", name: "GOMA WEBRADIO Magazine", host: "John Tsongo", description: "Magazine paix & cohésion sociale", tag: "Magazine" },
     { time: "12:00", end: "13:00", name: "Le Grand Journal", host: "Caleb Katembo", description: "Édition de mi-journée", tag: "Info" },
     { time: "14:30", end: "16:30", name: "Goma Rythmes", host: "DJ Kivu", description: "Rumba, Afrobeats & découvertes", tag: "Musique" },
     { time: "17:00", end: "19:00", name: "Echo des Volcans", host: "Sarah Mapendo", description: "Environnement et société", tag: "Magazine" },

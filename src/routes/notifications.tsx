@@ -15,7 +15,7 @@ export const Route = createFileRoute("/notifications")({
 });
 
 const items = [
-  { icon: "podcasts", title: "Nouvel épisode disponible", desc: "Sauti ya Amani — magazine paix", time: "il y a 2 h" },
+  { icon: "podcasts", title: "Nouvel épisode disponible", desc: "GOMA WEBRADIO — magazine paix", time: "il y a 2 h" },
   { icon: "campaign", title: "Alerte info", desc: "Point de sécurité à Goma ce midi", time: "il y a 5 h" },
   { icon: "radio", title: "Rappel d'émission", desc: "Le Grand Réveil commence à 05:00", time: "hier" },
 ];

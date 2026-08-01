@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Screen } from "@/components/Screen";
 import { articlesQuery, podcastQuery } from "@/lib/queries";
-import { relativeDate } from "@/lib/format";
+import { TimeAgo } from "@/components/TimeAgo";
 
 export const Route = createFileRoute("/recherche")({
   component: Recherche,
@@ -81,7 +81,7 @@ function Recherche() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="line-clamp-2 text-sm font-bold text-ink">{a.title}</p>
-                  <p className="truncate text-xs text-inkmute">{relativeDate(a.date)}</p>
+                  <p className="truncate text-xs text-inkmute"><TimeAgo date={a.date} /></p>
                 </div>
               </Link>
             ))}

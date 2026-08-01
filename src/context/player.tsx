@@ -20,14 +20,36 @@ export type Track = {
   src: string;
 };
 
+export type Quality = "Auto" | "Normale" | "Haute";
+
 export const LIVE_TRACK: Track = {
   id: "live",
   kind: "radio",
   title: "GOMA WEBRADIO — En direct",
-  subtitle: "La voix de Goma, 24h/24",
+  subtitle: "Fasi ya ndule na infos za palais",
   artwork: null,
   src: RADIO_STREAM,
 };
+
+type Persisted = {
+  track: Track | null;
+  progress: number;
+  volume: number;
+  muted: boolean;
+  quality: Quality;
+  wasPlaying: boolean;
+};
+
+const KEY = "gw-player-state";
+
+function readPersisted(): Partial<Persisted> {
+  if (typeof window === "undefined") return {};
+  try {
+    return JSON.parse(window.localStorage.getItem(KEY) ?? "{}") as Partial<Persisted>;
+  } catch {
+    return {};
+  }
+}
 
 type PlayerState = {
   track: Track | null;
@@ -37,6 +59,8 @@ type PlayerState = {
   muted: boolean;
   progress: number;
   duration: number;
+  quality: Quality;
+  setQuality: (q: Quality) => void;
   play: (track: Track) => void;
   toggle: (track?: Track) => void;
   stop: () => void;
@@ -57,14 +81,41 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const [muted, setMuted] = useState(false);
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [quality, setQualityState] = useState<Quality>("Auto");
+  const resumeAtRef = useRef(0);
 
   useEffect(() => {
     const audio = new Audio();
     audio.preload = "none";
-    audio.volume = 0.9;
     audioRef.current = audio;
+
+    // Restauration de l'état persisté
+    const saved = readPersisted();
+    const savedVolume = typeof saved.volume === "number" ? saved.volume : 0.9;
+    audio.volume = savedVolume;
+    audio.muted = Boolean(saved.muted);
+    setVolumeState(savedVolume);
+    setMuted(Boolean(saved.muted));
+    if (saved.quality) setQualityState(saved.quality);
+    if (saved.track) {
+      setTrack(saved.track);
+      if (saved.track.kind === "podcast") {
+        audio.src = saved.track.src;
+        resumeAtRef.current = saved.progress ?? 0;
+        setProgress(saved.progress ?? 0);
+      } else {
+        audio.src = saved.track.src;
+      }
+    }
+
     const onTime = () => setProgress(audio.currentTime);
-    const onMeta = () => setDuration(Number.isFinite(audio.duration) ? audio.duration : 0);
+    const onMeta = () => {
+      setDuration(Number.isFinite(audio.duration) ? audio.duration : 0);
+      if (resumeAtRef.current > 0) {
+        audio.currentTime = resumeAtRef.current;
+        resumeAtRef.current = 0;
+      }
+    };
     const onPlay = () => { setPlaying(true); setLoading(false); };
     const onPause = () => setPlaying(false);
     const onWaiting = () => setLoading(true);
@@ -89,14 +140,32 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  // Persistance de l'état du lecteur
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const payload: Persisted = {
+      track,
+      progress: track?.kind === "podcast" ? progress : 0,
+      volume,
+      muted,
+      quality,
+      wasPlaying: playing,
+    };
+    try {
+      window.localStorage.setItem(KEY, JSON.stringify(payload));
+    } catch { /* quota */ }
+  }, [track, progress, volume, muted, quality, playing]);
+
   const play = useCallback((next: Track) => {
     const audio = audioRef.current;
     if (!audio) return;
-    if (track?.id !== next.id || audio.src !== next.src) {
+    if (track?.id !== next.id) {
       audio.src = next.kind === "radio" ? `${next.src}?t=${Date.now()}` : next.src;
       setProgress(0);
       setDuration(0);
       setTrack(next);
+    } else if (!audio.src) {
+      audio.src = next.kind === "radio" ? `${next.src}?t=${Date.now()}` : next.src;
     }
     setLoading(true);
     void audio.play().catch(() => setLoading(false));
@@ -155,10 +224,12 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     setMuted(next);
   }, []);
 
+  const setQuality = useCallback((q: Quality) => setQualityState(q), []);
+
   const value = useMemo<PlayerState>(() => ({
-    track, playing, loading, volume, muted, progress, duration,
-    play, toggle, stop, seek, skip, setVolume, toggleMute,
-  }), [track, playing, loading, volume, muted, progress, duration, play, toggle, stop, seek, skip, setVolume, toggleMute]);
+    track, playing, loading, volume, muted, progress, duration, quality,
+    setQuality, play, toggle, stop, seek, skip, setVolume, toggleMute,
+  }), [track, playing, loading, volume, muted, progress, duration, quality, setQuality, play, toggle, stop, seek, skip, setVolume, toggleMute]);
 
   return <PlayerContext.Provider value={value}>{children}</PlayerContext.Provider>;
 }

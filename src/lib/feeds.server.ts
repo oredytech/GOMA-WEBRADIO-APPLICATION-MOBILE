@@ -62,25 +62,15 @@ export async function fetchArticles(opts: {
     page: String(opts.page ?? 1),
   });
   if (opts.search) params.set("search", opts.search);
-  try {
-    const posts = (await getJson(`${WP}/posts?${params.toString()}`)) as any[];
-    return Array.isArray(posts) ? posts.map(mapPost) : [];
-  } catch (error) {
-    console.error("fetchArticles failed", error);
-    return [];
-  }
+  const posts = (await getJson(`${WP}/posts?${params.toString()}`)) as any[];
+  return Array.isArray(posts) ? posts.map(mapPost) : [];
 }
 
 export async function fetchArticle(slug: string): Promise<Article | null> {
-  try {
-    const posts = (await getJson(
-      `${WP}/posts?_embed=1&slug=${encodeURIComponent(slug)}`,
-    )) as any[];
-    return posts?.[0] ? mapPost(posts[0]) : null;
-  } catch (error) {
-    console.error("fetchArticle failed", error);
-    return null;
-  }
+  const posts = (await getJson(
+    `${WP}/posts?_embed=1&slug=${encodeURIComponent(slug)}`,
+  )) as any[];
+  return posts?.[0] ? mapPost(posts[0]) : null;
 }
 
 function tag(block: string, name: string): string {
@@ -102,7 +92,7 @@ export async function fetchPodcast(): Promise<PodcastShow> {
     author: "Goma Webradio",
     episodes: [],
   };
-  try {
+  {
     const res = await fetch(RSS);
     if (!res.ok) throw new Error(`RSS request failed [${res.status}]`);
     const xml = await res.text();
@@ -125,8 +115,5 @@ export async function fetchPodcast(): Promise<PodcastShow> {
         author: tag(block, "itunes:author") || "Goma Webradio",
       })),
     };
-  } catch (error) {
-    console.error("fetchPodcast failed", error);
-    return empty;
   }
 }
