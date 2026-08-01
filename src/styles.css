@@ -34,6 +34,8 @@
   --shadow-lift: 0 18px 40px -20px rgb(1 27 64 / 0.45);
   --animate-fade-up: fade-up 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both;
   --animate-eq: eq 1s ease-in-out infinite;
+  --animate-pulse-slow: pulse-slow 3.2s ease-in-out infinite;
+
   --radius-sm: calc(var(--radius) - 4px);
 
   --radius-md: calc(var(--radius) - 2px);
