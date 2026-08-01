@@ -1,5 +1,5 @@
 import { Link, useRouter } from "@tanstack/react-router";
-import logo from "@/assets/logo.png.asset.json";
+import { LOGO_URL } from "@/lib/media";
 
 export function TopBar({
   title,
@@ -31,7 +31,7 @@ export function TopBar({
           </button>
         ) : (
           <Link to="/" className="flex items-center gap-2">
-            <img alt="GOMA WEBRADIO" src={logo.url} className="h-8 w-8 rounded-lg object-contain" />
+            <img alt="GOMA WEBRADIO" src={LOGO_URL} className="h-8 w-8 rounded-lg object-contain" />
           </Link>
         )}
 

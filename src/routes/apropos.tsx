@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Screen } from "@/components/Screen";
-import logo from "@/assets/logo.png.asset.json";
+import { CONTACT_EMAIL, LOGO_URL, RADIO_SLOGAN, SOCIALS } from "@/lib/media";
 
 export const Route = createFileRoute("/apropos")({
   component: APropos,
@@ -19,18 +19,19 @@ function APropos() {
   return (
     <Screen title="À propos" back>
       <div className="mt-6 flex flex-col items-center text-center">
-        <img src={logo.url} alt="GOMA WEBRADIO" className="h-24 w-24 rounded-3xl bg-[#011b40] object-contain p-4" />
+        <img src={LOGO_URL} alt="GOMA WEBRADIO" className="h-24 w-24 rounded-3xl bg-[#011b40] object-contain p-4" />
         <h1 className="mt-4 font-display text-2xl font-extrabold text-ink">GOMA WEBRADIO</h1>
         <p className="mt-2 text-sm leading-relaxed text-inkmute">
           Média digital basé à Goma, au Nord-Kivu (RDC). Nous diffusons une radio en direct 24h/24, des
           podcasts de reportages et l'actualité de la région et du pays.
         </p>
+        <p className="mt-2 text-sm font-bold text-brand">{RADIO_SLOGAN}</p>
       </div>
 
       <div className="mt-6 space-y-3">
         {[
           { icon: "language", label: "Site web", value: "gomawebradio.com" },
-          { icon: "mail", label: "Contact", value: "sonybabaoredy@gmail.com" },
+          { icon: "mail", label: "Contact", value: CONTACT_EMAIL },
           { icon: "location_on", label: "Studio", value: "Goma, Nord-Kivu, RDC" },
           { icon: "verified", label: "Version", value: "1.0.0" },
         ].map((r) => (
@@ -43,6 +44,24 @@ function APropos() {
               <p className="truncate text-sm font-bold text-ink">{r.value}</p>
             </div>
           </div>
+        ))}
+      </div>
+
+      <h2 className="mt-7 mb-3 font-display text-lg font-extrabold text-ink">Suivez-nous</h2>
+      <div className="grid grid-cols-2 gap-3">
+        {SOCIALS.map((s) => (
+          <a
+            key={s.label}
+            href={s.url}
+            target="_blank"
+            rel="noreferrer"
+            className="flex items-center gap-3 rounded-2xl border border-line bg-panel p-3 shadow-soft active:scale-[0.98]"
+          >
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand/15 text-brand">
+              <span className="material-symbols-outlined">{s.icon}</span>
+            </span>
+            <span className="truncate text-sm font-bold text-ink">{s.label}</span>
+          </a>
         ))}
       </div>
     </Screen>

@@ -1,14 +1,21 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { BottomNav } from "@/components/BottomNav";
-import { LIVE_TRACK, usePlayer } from "@/context/player";
-import { shareContent } from "@/lib/format";
+import { SmartImage } from "@/components/SmartImage";
+import { TilesSkeleton, ErrorRetry } from "@/components/Async";
+import { LIVE_TRACK, usePlayer, type Quality } from "@/context/player";
+import { prettyDuration, shareContent } from "@/lib/format";
 import { useFavorites } from "@/hooks/useFavorites";
-import { useSchedule } from "@/hooks/useSchedule";
-import playBg from "@/assets/play-bg.webp.asset.json";
+import { useNowPlaying } from "@/hooks/useNowPlaying";
+import { podcastQuery } from "@/lib/queries";
+import { LOGO_URL, PLAY_BG_URL, RADIO_NAME, RADIO_SLOGAN } from "@/lib/media";
 
 export const Route = createFileRoute("/radio")({
   component: Radio,
+  loader: ({ context }) => {
+    void context.queryClient.prefetchQuery(podcastQuery());
+  },
   head: () => ({
     meta: [
       { title: "Radio en direct — GOMA WEBRADIO" },
@@ -21,13 +28,13 @@ export const Route = createFileRoute("/radio")({
   }),
 });
 
-const qualities = ["Auto", "Normale", "Haute"] as const;
+const qualities: Quality[] = ["Auto", "Normale", "Haute"];
 
 function Radio() {
-  const { track, playing, loading, toggle, volume, setVolume, muted, toggleMute } = usePlayer();
+  const { track, playing, loading, toggle, volume, setVolume, muted, toggleMute, quality, setQuality } = usePlayer();
   const { toggle: toggleFav, isFavorite } = useFavorites();
-  const { show, next } = useSchedule();
-  const [quality, setQuality] = useState<(typeof qualities)[number]>("Auto");
+  const nowPlaying = useNowPlaying();
+  const podcastQ = useQuery(podcastQuery());
   const [toast, setToast] = useState<string | null>(null);
   const isRadio = track?.kind === "radio";
   const isLive = isRadio && playing;
@@ -44,7 +51,7 @@ function Radio() {
     <div className="relative isolate min-h-screen bg-[#01142f]">
       {/* Image de fond plein écran */}
       <div className="fixed inset-0 z-0">
-        <img src={playBg.url} alt="" aria-hidden className="h-full w-full object-cover object-center" />
+        <img src={PLAY_BG_URL} alt="" aria-hidden className="h-full w-full object-cover object-center" />
         <div className="absolute inset-0 bg-gradient-to-t from-[#01142f] via-[#01142f]/85 to-[#01142f]/35" />
       </div>
 
@@ -72,17 +79,13 @@ function Radio() {
       </header>
 
       <main className="relative z-10 mx-auto w-full max-w-2xl px-5 pb-44 pt-6">
-        {/* Pochette / égaliseur */}
-        <div className="mx-auto flex aspect-square w-full max-w-[300px] items-center justify-center rounded-3xl bg-white/10 shadow-lift ring-1 ring-white/15 backdrop-blur-md">
-          <div className="flex h-24 items-end gap-2">
-            {[0, 1, 2, 3, 4, 5, 6].map((i) => (
-              <span
-                key={i}
-                className={"w-3 rounded-full bg-brand " + (isLive ? "animate-eq" : "opacity-60")}
-                style={{ height: 24 + (i % 4) * 18, animationDelay: `${i * 0.1}s` }}
-              />
-            ))}
-          </div>
+        {/* Pochette : logo de la radio */}
+        <div className="mx-auto flex aspect-square w-full max-w-[300px] items-center justify-center rounded-3xl bg-white/10 p-10 shadow-lift ring-1 ring-white/15 backdrop-blur-md">
+          <img
+            src={LOGO_URL}
+            alt={RADIO_NAME}
+            className={"h-full w-full object-contain transition-transform " + (isLive ? "animate-pulse-slow" : "")}
+          />
         </div>
 
         <div className="mt-7 text-center">
@@ -90,11 +93,9 @@ function Radio() {
             <span className="h-2 w-2 animate-pulse rounded-full bg-white" /> Live
           </span>
           <h1 className="mt-3 font-display text-3xl font-extrabold leading-tight text-white">
-            {show?.name ?? "GOMA WEBRADIO"}
+            {nowPlaying ?? RADIO_NAME}
           </h1>
-          <p className="mt-1 text-sm text-white/75">
-            {show ? `Avec ${show.host} · ${show.description}` : "La voix de Goma, 24h/24"}
-          </p>
+          <p className="mt-1 text-sm text-white/75">{nowPlaying ? RADIO_NAME : RADIO_SLOGAN}</p>
         </div>
 
         {/* Barre live */}
@@ -104,7 +105,7 @@ function Radio() {
           </div>
           <div className="mt-2 flex justify-between text-[11px] font-semibold uppercase tracking-wide text-white/70">
             <span>{isLoading ? "Connexion…" : isLive ? "En direct" : "En pause"}</span>
-            <span>{show ? `${show.time} – ${show.end}` : "24h/24"}</span>
+            <span>24h/24</span>
           </div>
         </div>
 
@@ -116,9 +117,9 @@ function Radio() {
               const added = toggleFav({
                 id: "radio-live",
                 kind: "podcast",
-                title: "GOMA WEBRADIO — Direct",
+                title: RADIO_NAME,
                 subtitle: "Flux radio live",
-                image: playBg.url,
+                image: LOGO_URL,
                 href: "/radio",
               });
               setToast(added ? "Ajouté aux favoris" : "Retiré des favoris");
@@ -186,24 +187,51 @@ function Radio() {
           </div>
         </div>
 
-        {/* Prochaines émissions */}
+        {/* Podcasts récents */}
         <section className="mt-8">
-          <h2 className="mb-3 font-display text-lg font-extrabold text-white">Prochaines émissions</h2>
-          <div className="space-y-3">
-            {next.map((s) => (
-              <div key={s.name} className="flex items-center gap-3 rounded-2xl bg-white/10 p-3 ring-1 ring-white/15 backdrop-blur">
-                <div className="w-14 shrink-0 text-center">
-                  <p className="font-display text-base font-extrabold text-white">{s.time}</p>
-                  <p className="text-[11px] text-white/65">{s.end}</p>
-                </div>
-                <div className="min-w-0 flex-1">
-                  <h3 className="truncate text-sm font-bold text-white">{s.name}</h3>
-                  <p className="truncate text-xs text-white/70">{s.host} · {s.tag}</p>
-                </div>
-                <span className="material-symbols-outlined shrink-0 text-white/60">schedule</span>
-              </div>
-            ))}
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="font-display text-lg font-extrabold text-white">Podcasts récents</h2>
+            <Link to="/podcasts" className="text-xs font-bold uppercase tracking-wide text-brand">
+              Tout voir
+            </Link>
           </div>
+          {podcastQ.isPending && <TilesSkeleton count={3} />}
+          {podcastQ.isError && (
+            <ErrorRetry
+              message="Impossible de charger les podcasts."
+              onRetry={() => void podcastQ.refetch()}
+              busy={podcastQ.isFetching}
+            />
+          )}
+          {podcastQ.data && (
+            <div className="space-y-3">
+              {podcastQ.data.episodes.slice(0, 5).map((ep) => {
+                const epPlaying = track?.id === ep.id && playing;
+                return (
+                  <div key={ep.id} className="flex items-center gap-3 rounded-2xl bg-white/10 p-3 ring-1 ring-white/15 backdrop-blur">
+                    <Link to="/podcasts/$id" params={{ id: ep.id }} className="h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-white/10">
+                      <SmartImage src={ep.image} alt={ep.title} className="h-full w-full object-cover" />
+                    </Link>
+                    <Link to="/podcasts/$id" params={{ id: ep.id }} className="min-w-0 flex-1">
+                      <h3 className="line-clamp-2 text-sm font-bold text-white">{ep.title}</h3>
+                      <p className="truncate text-xs text-white/70">{prettyDuration(ep.duration)}</p>
+                    </Link>
+                    <button
+                      aria-label={epPlaying ? "Pause" : `Écouter ${ep.title}`}
+                      onClick={() =>
+                        toggle({ id: ep.id, kind: "podcast", title: ep.title, subtitle: ep.author, artwork: ep.image, src: ep.audio })
+                      }
+                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-blood text-white active:scale-95"
+                    >
+                      <span className="material-symbols-outlined" style={{ fontSize: 24, fontVariationSettings: "'FILL' 1" }}>
+                        {epPlaying ? "pause" : "play_arrow"}
+                      </span>
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </section>
       </main>
 

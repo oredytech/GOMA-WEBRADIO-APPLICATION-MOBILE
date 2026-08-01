@@ -1,6 +1,6 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import { usePlayer } from "@/context/player";
-import logo from "@/assets/logo.png.asset.json";
+import { LOGO_URL } from "@/lib/media";
 
 export function MiniPlayer() {
   const { track, playing, loading, toggle, stop } = usePlayer();
@@ -16,7 +16,7 @@ export function MiniPlayer() {
           <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-brand-deep">
             <img
               alt="GOMA WEBRADIO"
-              src={track.artwork ?? logo.url}
+              src={track.artwork ?? LOGO_URL}
               className={track.artwork ? "h-full w-full object-cover" : "h-full w-full object-contain p-1.5"}
             />
             {track.kind === "radio" && (

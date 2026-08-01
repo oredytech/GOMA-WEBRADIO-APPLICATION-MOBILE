@@ -1,13 +1,16 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { SmartImage } from "@/components/SmartImage";
 import { Screen } from "@/components/Screen";
 import { articlesQuery } from "@/lib/queries";
-import { formatDate } from "@/lib/format";
+import { TimeAgo } from "@/components/TimeAgo";
+import { AsyncSection, CardListSkeleton } from "@/components/Async";
 
 export const Route = createFileRoute("/articles/")({
   component: Articles,
-  loader: ({ context }) => context.queryClient.ensureQueryData(articlesQuery({ perPage: 12 })),
+  loader: ({ context }) => {
+    void context.queryClient.prefetchQuery(articlesQuery({ perPage: 12 }));
+  },
   head: () => ({
     meta: [
       { title: "Actualités — GOMA WEBRADIO" },
@@ -20,10 +23,20 @@ export const Route = createFileRoute("/articles/")({
 });
 
 function Articles() {
-  const { data: articles } = useSuspenseQuery(articlesQuery({ perPage: 12 }));
+  const articlesQ = useQuery(articlesQuery({ perPage: 12 }));
+  const articles = articlesQ.data ?? [];
   return (
     <Screen title="Actualités">
       <div className="space-y-4 pt-4">
+        <AsyncSection
+          isPending={articlesQ.isPending}
+          isError={articlesQ.isError}
+          isFetching={articlesQ.isFetching}
+          onRetry={() => void articlesQ.refetch()}
+          errorMessage="Impossible de charger les actualités."
+          skeleton={<CardListSkeleton rows={5} />}
+        >
+        <div className="space-y-4">
         {articles.map((a) => (
           <article key={a.id} className="overflow-hidden rounded-2xl border border-line bg-panel shadow-soft">
             <Link to="/articles/$slug" params={{ slug: a.slug }}>
@@ -34,7 +47,7 @@ function Articles() {
                 <p className="mt-1 line-clamp-2 text-sm text-inkmute">{a.excerpt}</p>
                 <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-inkmute">
                   <span className="font-semibold text-ink">{a.author}</span>
-                  <span>·</span><span>{formatDate(a.date)}</span>
+                  <span>·</span><span><TimeAgo date={a.date} /></span>
                   <span>·</span><span>{a.readingTime} min de lecture</span>
                 </div>
                 <span className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-brand px-4 py-2 text-xs font-bold text-white">
@@ -45,7 +58,9 @@ function Articles() {
             </Link>
           </article>
         ))}
-        {articles.length === 0 && <p className="text-sm text-inkmute">Actualités indisponibles pour le moment.</p>}
+        {articles.length === 0 && <p className="text-sm text-inkmute">Aucune actualité pour le moment.</p>}
+        </div>
+        </AsyncSection>
       </div>
     </Screen>
   );
