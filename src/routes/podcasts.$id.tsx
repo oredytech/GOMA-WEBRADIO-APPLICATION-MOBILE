@@ -1,15 +1,19 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { SmartImage } from "@/components/SmartImage";
 import { Screen } from "@/components/Screen";
 import { podcastQuery } from "@/lib/queries";
 import { usePlayer } from "@/context/player";
-import { prettyDuration, relativeDate, shareContent } from "@/lib/format";
+import { prettyDuration, shareContent } from "@/lib/format";
+import { TimeAgo } from "@/components/TimeAgo";
+import { ErrorRetry, Skeleton } from "@/components/Async";
 import { useFavorites } from "@/hooks/useFavorites";
 
 export const Route = createFileRoute("/podcasts/$id")({
   component: EpisodePage,
-  loader: ({ context }) => context.queryClient.ensureQueryData(podcastQuery()),
+  loader: ({ context }) => {
+    void context.queryClient.prefetchQuery(podcastQuery());
+  },
   head: () => ({
     meta: [
       { title: "Épisode — Podcasts GOMA WEBRADIO" },
@@ -22,10 +26,37 @@ export const Route = createFileRoute("/podcasts/$id")({
 
 function EpisodePage() {
   const { id } = Route.useParams();
-  const { data: show } = useSuspenseQuery(podcastQuery());
+  const podcastQ = useQuery(podcastQuery());
+  const show = podcastQ.data;
   const { track, playing, toggle } = usePlayer();
   const { toggle: toggleFav, isFavorite } = useFavorites();
-  const ep = show.episodes.find((e) => e.id === id);
+  const ep = show?.episodes.find((e) => e.id === id);
+
+  if (podcastQ.isPending) {
+    return (
+      <Screen title="Épisode" back>
+        <div className="space-y-4 pt-4">
+          <Skeleton className="aspect-square w-full rounded-2xl" />
+          <Skeleton className="h-5 w-3/4" />
+          <Skeleton className="h-3 w-1/2" />
+        </div>
+      </Screen>
+    );
+  }
+
+  if (podcastQ.isError) {
+    return (
+      <Screen title="Épisode" back>
+        <div className="pt-6">
+          <ErrorRetry
+            message="Impossible de charger cet épisode."
+            onRetry={() => void podcastQ.refetch()}
+            busy={podcastQ.isFetching}
+          />
+        </div>
+      </Screen>
+    );
+  }
 
   if (!ep) {
     return (
@@ -46,7 +77,7 @@ function EpisodePage() {
         </div>
         <h1 className="mt-4 font-display text-xl font-extrabold leading-tight text-ink">{ep.title}</h1>
         <p className="mt-1 text-xs text-inkmute">
-          {ep.author} · {relativeDate(ep.date)} · {prettyDuration(ep.duration)}
+          {ep.author} · <TimeAgo date={ep.date} /> · {prettyDuration(ep.duration)}
         </p>
 
         <div className="mt-4 flex flex-wrap items-center gap-2">
@@ -83,7 +114,7 @@ function EpisodePage() {
 
         <h2 className="mt-8 font-display text-lg font-extrabold text-ink">Épisodes similaires</h2>
         <div className="mt-3 space-y-3">
-          {show.episodes.filter((e) => e.id !== ep.id).slice(0, 6).map((e) => (
+          {(show?.episodes ?? []).filter((e) => e.id !== ep.id).slice(0, 6).map((e) => (
             <Link key={e.id} to="/podcasts/$id" params={{ id: e.id }} className="flex gap-3 rounded-2xl border border-line bg-panel p-3 shadow-soft active:scale-[0.99]">
               <div className="h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-panel2">
                 <SmartImage src={e.image} alt={e.title} className="h-full w-full object-cover" />

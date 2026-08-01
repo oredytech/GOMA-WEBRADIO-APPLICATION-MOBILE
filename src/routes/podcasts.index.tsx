@@ -1,16 +1,20 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { SmartImage } from "@/components/SmartImage";
 import { Screen } from "@/components/Screen";
 import { podcastQuery } from "@/lib/queries";
 import { usePlayer } from "@/context/player";
-import { prettyDuration, relativeDate } from "@/lib/format";
+import { prettyDuration } from "@/lib/format";
+import { TimeAgo } from "@/components/TimeAgo";
+import { AsyncSection, CardListSkeleton, Skeleton } from "@/components/Async";
 import { podcastCategories } from "@/lib/programs";
 
 export const Route = createFileRoute("/podcasts/")({
   component: Podcasts,
-  loader: ({ context }) => context.queryClient.ensureQueryData(podcastQuery()),
+  loader: ({ context }) => {
+    void context.queryClient.prefetchQuery(podcastQuery());
+  },
   head: () => ({
     meta: [
       { title: "Podcasts — GOMA WEBRADIO" },
@@ -23,19 +27,20 @@ export const Route = createFileRoute("/podcasts/")({
 });
 
 function Podcasts() {
-  const { data: show } = useSuspenseQuery(podcastQuery());
+  const podcastQ = useQuery(podcastQuery());
+  const show = podcastQ.data;
   const { track, playing, toggle } = usePlayer();
   const [q, setQ] = useState("");
   const [cat, setCat] = useState("Tous");
 
   const episodes = useMemo(() => {
     const needle = q.toLowerCase();
-    return show.episodes.filter((e) => {
+    return (show?.episodes ?? []).filter((e) => {
       const matchQ = !needle || e.title.toLowerCase().includes(needle) || e.description.toLowerCase().includes(needle);
       const matchC = cat === "Tous" || `${e.title} ${e.description}`.toLowerCase().includes(cat.toLowerCase());
       return matchQ && matchC;
     });
-  }, [show.episodes, q, cat]);
+  }, [show?.episodes, q, cat]);
 
   return (
     <Screen title="Podcasts">
@@ -71,6 +76,16 @@ function Podcasts() {
         </div>
       </div>
 
+      {podcastQ.isPending && (
+        <div className="mt-5 flex items-center gap-4 rounded-2xl border border-line bg-panel p-4">
+          <Skeleton className="h-20 w-20 rounded-2xl" />
+          <div className="flex-1 space-y-2">
+            <Skeleton className="h-4 w-1/2" />
+            <Skeleton className="h-3 w-3/4" />
+          </div>
+        </div>
+      )}
+      {show && (
       <section className="mt-5 flex items-center gap-4 rounded-2xl border border-line bg-panel p-4 shadow-soft">
         <div className="h-20 w-20 shrink-0 overflow-hidden rounded-2xl bg-panel2">
           <SmartImage src={show.image} alt={show.title} className="h-full w-full object-cover" loading="eager" />
@@ -83,8 +98,17 @@ function Podcasts() {
           </p>
         </div>
       </section>
+      )}
 
       <section className="mt-5 space-y-3">
+        <AsyncSection
+          isPending={podcastQ.isPending}
+          isError={podcastQ.isError}
+          isFetching={podcastQ.isFetching}
+          onRetry={() => void podcastQ.refetch()}
+          errorMessage="Impossible de charger les podcasts."
+          skeleton={<CardListSkeleton rows={5} />}
+        >
         {episodes.map((ep) => {
           const isCurrent = track?.id === ep.id && playing;
           return (
@@ -98,7 +122,7 @@ function Podcasts() {
                     <h3 className="line-clamp-2 text-sm font-bold leading-snug text-ink">{ep.title}</h3>
                   </Link>
                   <p className="mt-1 text-xs text-inkmute">
-                    {relativeDate(ep.date)} · {prettyDuration(ep.duration)}
+                    <TimeAgo date={ep.date} /> · {prettyDuration(ep.duration)}
                   </p>
                   <div className="mt-2 flex items-center gap-2">
                     <button
@@ -136,6 +160,7 @@ function Podcasts() {
           );
         })}
         {episodes.length === 0 && <p className="text-sm text-inkmute">Aucun épisode trouvé.</p>}
+        </AsyncSection>
       </section>
     </Screen>
   );
