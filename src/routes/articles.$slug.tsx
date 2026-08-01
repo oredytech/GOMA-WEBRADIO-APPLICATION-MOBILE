@@ -1,14 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { SmartImage } from "@/components/SmartImage";
 import { Screen } from "@/components/Screen";
 import { articleQuery } from "@/lib/queries";
 import { formatDate, shareContent } from "@/lib/format";
+import { ErrorRetry, Skeleton } from "@/components/Async";
 import { useFavorites } from "@/hooks/useFavorites";
 
 export const Route = createFileRoute("/articles/$slug")({
   component: ArticlePage,
-  loader: ({ context, params }) => context.queryClient.ensureQueryData(articleQuery(params.slug)),
+  loader: ({ context, params }) => context.queryClient.ensureQueryData(articleQuery(params.slug)).catch(() => null),
   head: ({ loaderData, params }) => ({
     meta: [
       { title: `${loaderData?.title ?? "Article"} — GOMA WEBRADIO` },
@@ -29,8 +30,38 @@ export const Route = createFileRoute("/articles/$slug")({
 
 function ArticlePage() {
   const { slug } = Route.useParams();
-  const { data: article } = useSuspenseQuery(articleQuery(slug));
+  const articleQ = useQuery(articleQuery(slug));
+  const article = articleQ.data;
   const { toggle, isFavorite } = useFavorites();
+
+  if (articleQ.isPending) {
+    return (
+      <Screen title="Article" back>
+        <div className="space-y-4 pt-4">
+          <Skeleton className="h-56 w-full rounded-2xl" />
+          <Skeleton className="h-6 w-4/5" />
+          <Skeleton className="h-3 w-1/2" />
+          <Skeleton className="h-3 w-full" />
+          <Skeleton className="h-3 w-full" />
+          <Skeleton className="h-3 w-2/3" />
+        </div>
+      </Screen>
+    );
+  }
+
+  if (articleQ.isError) {
+    return (
+      <Screen title="Article" back>
+        <div className="pt-6">
+          <ErrorRetry
+            message="Impossible de charger cet article."
+            onRetry={() => void articleQ.refetch()}
+            busy={articleQ.isFetching}
+          />
+        </div>
+      </Screen>
+    );
+  }
 
   if (!article) {
     return (
