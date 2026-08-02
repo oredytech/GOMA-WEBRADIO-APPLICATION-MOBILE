@@ -1,5 +1,6 @@
 import { Link, useRouter } from "@tanstack/react-router";
 import { LOGO_URL } from "@/lib/media";
+import { useNotifications } from "@/hooks/useNotifications";
 
 export function TopBar({
   title,
@@ -13,6 +14,7 @@ export function TopBar({
   action?: React.ReactNode;
 }) {
   const router = useRouter();
+  const { unreadCount } = useNotifications();
   return (
     <header
       className={
@@ -52,9 +54,14 @@ export function TopBar({
               <Link
                 to="/notifications"
                 aria-label="Notifications"
-                className="flex h-10 w-10 items-center justify-center rounded-full text-ink active:scale-95"
+                className="relative flex h-10 w-10 items-center justify-center rounded-full text-ink active:scale-95"
               >
                 <span className="material-symbols-outlined">notifications</span>
+                {unreadCount > 0 && (
+                  <span className="absolute right-1 top-1 flex min-w-[18px] items-center justify-center rounded-full bg-blood px-1 text-[10px] font-extrabold leading-[18px] text-white">
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </span>
+                )}
               </Link>
             </>
           )}

@@ -10,7 +10,7 @@ export function MiniPlayer() {
   const href = track.kind === "radio" ? "/radio" : "/podcasts";
 
   return (
-    <div className="fixed bottom-[70px] left-0 right-0 z-40 px-4">
+    <div className="fixed bottom-[calc(68px+4px+env(safe-area-inset-bottom))] left-0 right-0 z-40 px-4">
       <div className="mx-auto flex max-w-2xl items-center gap-3 rounded-2xl border border-line bg-panel/95 p-2 pr-3 shadow-lift backdrop-blur-xl">
         <Link to={href} className="flex min-w-0 flex-1 items-center gap-3">
           <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-brand-deep">
