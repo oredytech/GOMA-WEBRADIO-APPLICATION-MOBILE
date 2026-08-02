@@ -37,6 +37,7 @@ type Persisted = {
   volume: number;
   muted: boolean;
   quality: Quality;
+  rate: number;
   wasPlaying: boolean;
 };
 
@@ -60,6 +61,8 @@ type PlayerState = {
   progress: number;
   duration: number;
   quality: Quality;
+  rate: number;
+  setRate: (r: number) => void;
   setQuality: (q: Quality) => void;
   play: (track: Track) => void;
   toggle: (track?: Track) => void;
@@ -82,6 +85,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   const [quality, setQualityState] = useState<Quality>("Auto");
+  const [rate, setRateState] = useState(1);
   const resumeAtRef = useRef(0);
 
   useEffect(() => {
@@ -97,6 +101,10 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     setVolumeState(savedVolume);
     setMuted(Boolean(saved.muted));
     if (saved.quality) setQualityState(saved.quality);
+    if (typeof saved.rate === "number" && saved.rate > 0) {
+      audio.playbackRate = saved.rate;
+      setRateState(saved.rate);
+    }
     if (saved.track) {
       setTrack(saved.track);
       if (saved.track.kind === "podcast") {
@@ -149,12 +157,13 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       volume,
       muted,
       quality,
+      rate,
       wasPlaying: playing,
     };
     try {
       window.localStorage.setItem(KEY, JSON.stringify(payload));
     } catch { /* quota */ }
-  }, [track, progress, volume, muted, quality, playing]);
+  }, [track, progress, volume, muted, quality, rate, playing]);
 
   const play = useCallback((next: Track) => {
     const audio = audioRef.current;
@@ -226,10 +235,30 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
 
   const setQuality = useCallback((q: Quality) => setQualityState(q), []);
 
+  const setRate = useCallback((r: number) => {
+    const audio = audioRef.current;
+    if (audio) audio.playbackRate = r;
+    setRateState(r);
+  }, []);
+
+  useEffect(() => {
+    if (typeof navigator === "undefined" || !("mediaSession" in navigator) || !track) return;
+    try {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: track.title,
+        artist: track.subtitle,
+        album: "GOMA WEBRADIO",
+        artwork: [{ src: track.artwork ?? "/icon-512.png", sizes: "512x512", type: "image/png" }],
+      });
+      navigator.mediaSession.setActionHandler("play", () => audioRef.current?.play());
+      navigator.mediaSession.setActionHandler("pause", () => audioRef.current?.pause());
+    } catch { /* ignore */ }
+  }, [track]);
+
   const value = useMemo<PlayerState>(() => ({
-    track, playing, loading, volume, muted, progress, duration, quality,
+    track, playing, loading, volume, muted, progress, duration, quality, rate, setRate,
     setQuality, play, toggle, stop, seek, skip, setVolume, toggleMute,
-  }), [track, playing, loading, volume, muted, progress, duration, quality, setQuality, play, toggle, stop, seek, skip, setVolume, toggleMute]);
+  }), [track, playing, loading, volume, muted, progress, duration, quality, rate, setRate, setQuality, play, toggle, stop, seek, skip, setVolume, toggleMute]);
 
   return <PlayerContext.Provider value={value}>{children}</PlayerContext.Provider>;
 }
