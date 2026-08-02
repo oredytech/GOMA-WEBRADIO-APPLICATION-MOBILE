@@ -1,0 +1,67 @@
+{
+  "id": "/",
+  "name": "GOMA WEBRADIO — Radio, Podcasts & Actualités",
+  "short_name": "GOMA WEBRADIO",
+  "description": "Écoutez GOMA WEBRADIO en direct depuis Goma (RDC) : radio live, podcasts à la demande et actualités du Nord-Kivu. Fasi ya ndule na infos za palais.",
+  "lang": "fr",
+  "dir": "ltr",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui", "browser"],
+  "orientation": "portrait-primary",
+  "theme_color": "#011b40",
+  "background_color": "#011b40",
+  "categories": ["news", "music", "entertainment", "education"],
+  "prefer_related_applications": false,
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "/apple-touch-icon.png", "sizes": "180x180", "type": "image/png", "purpose": "any" },
+    { "src": "/favicon.png", "sizes": "64x64", "type": "image/png", "purpose": "any" }
+  ],
+  "shortcuts": [
+    {
+      "name": "Écouter la radio en direct",
+      "short_name": "Direct",
+      "description": "Lancer le flux live de GOMA WEBRADIO",
+      "url": "/radio",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Podcasts",
+      "short_name": "Podcasts",
+      "description": "Tous les épisodes à la demande",
+      "url": "/podcasts",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Actualités",
+      "short_name": "Articles",
+      "description": "Les dernières actualités",
+      "url": "/articles",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Notifications",
+      "short_name": "Alertes",
+      "description": "Nouveaux articles et épisodes",
+      "url": "/notifications",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/play-bg.webp",
+      "sizes": "1280x720",
+      "type": "image/webp",
+      "form_factor": "wide",
+      "label": "Lecteur radio en direct"
+    }
+  ],
+  "launch_handler": { "client_mode": ["navigate-existing", "auto"] },
+  "handle_links": "preferred",
+  "protocol_handlers": []
+}

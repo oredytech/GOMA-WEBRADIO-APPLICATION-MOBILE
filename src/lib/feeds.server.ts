@@ -20,6 +20,7 @@ function decode(input: string): string {
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">")
     .replace(/&quot;/g, '"')
+    .replace(/<[^>]*>/g, " ")
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -116,4 +117,58 @@ export async function fetchPodcast(): Promise<PodcastShow> {
       })),
     };
   }
+}
+
+export async function fetchComments(postId: number): Promise<import("./feeds.types").Comment[]> {
+  const res = await fetch(
+    `${WP}/comments?post=${postId}&per_page=50&order=asc&orderby=date`,
+    { headers: { accept: "application/json" } },
+  );
+  if (!res.ok) return [];
+  const data = (await res.json()) as any[];
+  if (!Array.isArray(data)) return [];
+  return data.map((c) => ({
+    id: c.id,
+    parent: c.parent ?? 0,
+    author: decode(c.author_name ?? "Anonyme"),
+    avatar: c.author_avatar_urls?.["48"] ?? null,
+    date: c.date,
+    content: decode(c.content?.rendered ?? ""),
+  }));
+}
+
+export async function createComment(input: {
+  post: number;
+  author_name: string;
+  author_email: string;
+  content: string;
+}): Promise<{ ok: boolean; status: "published" | "pending" | "error"; message: string }> {
+  const res = await fetch(`${WP}/comments`, {
+    method: "POST",
+    headers: { "content-type": "application/json", accept: "application/json" },
+    body: JSON.stringify(input),
+  });
+  const body = await res.text();
+  if (!res.ok) {
+    let message = "Impossible d'envoyer le commentaire pour le moment.";
+    try {
+      const parsed = JSON.parse(body);
+      if (parsed?.code === "rest_comment_login_required")
+        message = "Les commentaires sont réservés aux membres connectés sur gomawebradio.com.";
+      else if (parsed?.message) message = decode(String(parsed.message));
+    } catch { /* ignore */ }
+    console.error(`WordPress comment failed [${res.status}]: ${body}`);
+    return { ok: false, status: "error", message };
+  }
+  let pending = true;
+  try {
+    pending = JSON.parse(body)?.status !== "approved";
+  } catch { /* ignore */ }
+  return {
+    ok: true,
+    status: pending ? "pending" : "published",
+    message: pending
+      ? "Merci ! Votre commentaire est en attente de modération."
+      : "Merci ! Votre commentaire est publié.",
+  };
 }

@@ -6,6 +6,7 @@ import { articleQuery } from "@/lib/queries";
 import { formatDate, shareContent } from "@/lib/format";
 import { ErrorRetry, Skeleton } from "@/components/Async";
 import { useFavorites } from "@/hooks/useFavorites";
+import { ArticleComments } from "@/components/ArticleComments";
 
 export const Route = createFileRoute("/articles/$slug")({
   component: ArticlePage,
@@ -102,6 +103,7 @@ function ArticlePage() {
         </div>
 
         <div className="gw-article-content mt-5 text-ink/90" dangerouslySetInnerHTML={{ __html: article.content }} />
+        <ArticleComments postId={article.id} />
       </article>
     </Screen>
   );
