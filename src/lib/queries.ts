@@ -1,5 +1,5 @@
 import { queryOptions } from "@tanstack/react-query";
-import { getArticle, getArticles, getPodcast } from "./feeds.functions";
+import { getArticle, getArticles, getComments, getPodcast } from "./feeds.functions";
 
 export const articlesQuery = (opts: { page?: number; search?: string; perPage?: number } = {}) =>
   queryOptions({
@@ -20,4 +20,11 @@ export const podcastQuery = () =>
     queryKey: ["podcast"],
     queryFn: () => getPodcast(),
     staleTime: 10 * 60_000,
+  });
+
+export const commentsQuery = (postId: number) =>
+  queryOptions({
+    queryKey: ["comments", postId],
+    queryFn: () => getComments({ data: { postId } }),
+    staleTime: 60_000,
   });

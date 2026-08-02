@@ -30,3 +30,12 @@ export type PodcastShow = {
   author: string;
   episodes: Episode[];
 };
+
+export type Comment = {
+  id: number;
+  parent: number;
+  author: string;
+  avatar: string | null;
+  date: string;
+  content: string;
+};
