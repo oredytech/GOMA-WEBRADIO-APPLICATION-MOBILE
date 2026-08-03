@@ -112,7 +112,8 @@ function Parametres() {
   const [dark, setDark] = useState(false);
   const [notif, setNotif] = useState(true);
   const [wifi, setWifi] = useState(true);
-  const [quality, setQuality] = useState("Auto");
+  const player = usePlayer();
+  const { quality, eq, eqEnabled, eqSupported, setEqEnabled, setEqBands } = player;
 
   useEffect(() => {
     setDark(document.documentElement.classList.contains("dark"));
@@ -137,7 +138,7 @@ function Parametres() {
             {["Auto", "Normale", "Haute"].map((q) => (
               <button
                 key={q}
-                onClick={() => setQuality(q)}
+                onClick={() => player.setQuality(q as typeof quality)}
                 className={"flex-1 rounded-full px-3 py-2 text-xs font-bold active:scale-95 " + (quality === q ? "bg-brand text-white" : "border border-line bg-panel2 text-ink")}
               >
                 {q}
@@ -145,6 +146,36 @@ function Parametres() {
             ))}
           </div>
         </div>
+
+        <h2 className="pt-2 font-display text-lg font-extrabold text-ink">Réglages du son</h2>
+        <Toggle
+          on={eqEnabled}
+          onChange={setEqEnabled}
+          label="Égaliseur"
+          desc={eqSupported ? "Ajustez graves, médiums et aigus" : "Non pris en charge sur cet appareil"}
+        />
+        {!eqSupported && (
+          <p className="px-1 text-xs text-blood">
+            L'égaliseur n'est pas disponible ici. Si le son est coupé, désactivez-le puis rechargez l'application.
+          </p>
+        )}
+        <EqPanel
+          kind="radio"
+          title="Radio en direct"
+          desc="Égaliseur appliqué au flux live"
+          bands={eq.radio}
+          disabled={!eqEnabled || !eqSupported}
+          onChange={setEqBands}
+        />
+        <EqPanel
+          kind="podcast"
+          title="Podcasts"
+          desc="Égaliseur appliqué aux épisodes"
+          bands={eq.podcast}
+          disabled={!eqEnabled || !eqSupported}
+          onChange={setEqBands}
+        />
+
       </div>
     </Screen>
   );
