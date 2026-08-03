@@ -300,10 +300,71 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     } catch { /* ignore */ }
   }, [track]);
 
+  // Restauration des réglages d'égaliseur
+  useEffect(() => { setEqState(readEq()); }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try { window.localStorage.setItem(EQ_KEY, JSON.stringify(eqState)); } catch { /* quota */ }
+  }, [eqState]);
+
+  // Construction / mise à jour du graphe audio
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio || !eqState.enabled) return;
+    if (!filtersRef.current) {
+      try {
+        const Ctor = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+        if (!Ctor) { setEqSupported(false); return; }
+        const ctx = new Ctor();
+        const source = ctx.createMediaElementSource(audio);
+        const bass = ctx.createBiquadFilter();
+        bass.type = "lowshelf"; bass.frequency.value = 200;
+        const mid = ctx.createBiquadFilter();
+        mid.type = "peaking"; mid.frequency.value = 1200; mid.Q.value = 1;
+        const treble = ctx.createBiquadFilter();
+        treble.type = "highshelf"; treble.frequency.value = 4000;
+        source.connect(bass).connect(mid).connect(treble).connect(ctx.destination);
+        audioCtxRef.current = ctx;
+        filtersRef.current = { bass, mid, treble };
+      } catch {
+        setEqSupported(false);
+        return;
+      }
+    }
+    void audioCtxRef.current?.resume().catch(() => undefined);
+    const bands = eqState[(track?.kind ?? "radio") as EqKind] ?? EQ_FLAT;
+    const f = filtersRef.current;
+    if (f) {
+      f.bass.gain.value = bands.bass;
+      f.mid.gain.value = bands.mid;
+      f.treble.gain.value = bands.treble;
+    }
+  }, [eqState, track?.kind]);
+
+  // Égaliseur désactivé : gains neutres
+  useEffect(() => {
+    if (eqState.enabled) return;
+    const f = filtersRef.current;
+    if (!f) return;
+    f.bass.gain.value = 0;
+    f.mid.gain.value = 0;
+    f.treble.gain.value = 0;
+  }, [eqState.enabled]);
+
+  const setEqEnabled = useCallback((v: boolean) => setEqState((s) => ({ ...s, enabled: v })), []);
+  const setEqBands = useCallback(
+    (kind: EqKind, bands: EqBands) => setEqState((s) => ({ ...s, [kind]: bands })),
+    [],
+  );
+
   const value = useMemo<PlayerState>(() => ({
     track, playing, loading, volume, muted, progress, duration, quality, rate, setRate,
+    eqEnabled: eqState.enabled, eqSupported, eq: { radio: eqState.radio, podcast: eqState.podcast },
+    setEqEnabled, setEqBands,
     setQuality, play, toggle, stop, seek, skip, setVolume, toggleMute,
-  }), [track, playing, loading, volume, muted, progress, duration, quality, rate, setRate, setQuality, play, toggle, stop, seek, skip, setVolume, toggleMute]);
+  }), [track, playing, loading, volume, muted, progress, duration, quality, rate, setRate, eqState, eqSupported, setEqEnabled, setEqBands, setQuality, play, toggle, stop, seek, skip, setVolume, toggleMute]);
+
 
   return <PlayerContext.Provider value={value}>{children}</PlayerContext.Provider>;
 }
