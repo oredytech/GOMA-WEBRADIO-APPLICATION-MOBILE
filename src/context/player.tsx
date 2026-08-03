@@ -126,6 +126,13 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const [rate, setRateState] = useState(1);
   const resumeAtRef = useRef(0);
 
+  // Égaliseur (Web Audio) — appliqué à la radio et aux podcasts séparément
+  const [eqState, setEqState] = useState<EqState>(DEFAULT_EQ);
+  const [eqSupported, setEqSupported] = useState(true);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const filtersRef = useRef<{ bass: BiquadFilterNode; mid: BiquadFilterNode; treble: BiquadFilterNode } | null>(null);
+
+
   useEffect(() => {
     const audio = new Audio();
     audio.preload = "none";
