@@ -42,6 +42,39 @@ type Persisted = {
 };
 
 const KEY = "gw-player-state";
+const EQ_KEY = "gw-eq-state";
+
+export type EqBands = { bass: number; mid: number; treble: number };
+export type EqKind = "radio" | "podcast";
+
+export const EQ_FLAT: EqBands = { bass: 0, mid: 0, treble: 0 };
+
+export const EQ_PRESETS: { label: string; bands: EqBands }[] = [
+  { label: "Neutre", bands: { bass: 0, mid: 0, treble: 0 } },
+  { label: "Voix", bands: { bass: -2, mid: 4, treble: 2 } },
+  { label: "Musique", bands: { bass: 4, mid: 0, treble: 3 } },
+  { label: "Basses+", bands: { bass: 7, mid: -1, treble: 0 } },
+  { label: "Clarté", bands: { bass: -3, mid: 2, treble: 6 } },
+];
+
+type EqState = { enabled: boolean; radio: EqBands; podcast: EqBands };
+
+const DEFAULT_EQ: EqState = { enabled: false, radio: { ...EQ_FLAT }, podcast: { ...EQ_FLAT } };
+
+function readEq(): EqState {
+  if (typeof window === "undefined") return DEFAULT_EQ;
+  try {
+    const raw = JSON.parse(window.localStorage.getItem(EQ_KEY) ?? "null");
+    if (!raw) return DEFAULT_EQ;
+    return {
+      enabled: Boolean(raw.enabled),
+      radio: { ...EQ_FLAT, ...(raw.radio ?? {}) },
+      podcast: { ...EQ_FLAT, ...(raw.podcast ?? {}) },
+    };
+  } catch {
+    return DEFAULT_EQ;
+  }
+}
 
 function readPersisted(): Partial<Persisted> {
   if (typeof window === "undefined") return {};
@@ -62,6 +95,11 @@ type PlayerState = {
   duration: number;
   quality: Quality;
   rate: number;
+  eqEnabled: boolean;
+  eqSupported: boolean;
+  eq: Record<EqKind, EqBands>;
+  setEqEnabled: (v: boolean) => void;
+  setEqBands: (kind: EqKind, bands: EqBands) => void;
   setRate: (r: number) => void;
   setQuality: (q: Quality) => void;
   play: (track: Track) => void;
