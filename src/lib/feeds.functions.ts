@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import type { Article, Comment, PodcastShow } from "./feeds.types";
+import type { Article, ArticlePage, Category, Comment, PodcastShow } from "./feeds.types";
 
 export const getArticles = createServerFn({ method: "GET" })
   .inputValidator((data: { page?: number; search?: string; perPage?: number }) => data ?? {})
@@ -8,12 +8,36 @@ export const getArticles = createServerFn({ method: "GET" })
     return fetchArticles(data ?? {});
   });
 
+export const getArticlesPage = createServerFn({ method: "GET" })
+  .inputValidator(
+    (data: { page?: number; perPage?: number; search?: string; categoryId?: number }) => data ?? {},
+  )
+  .handler(async ({ data }): Promise<ArticlePage> => {
+    const { fetchArticlesPage } = await import("./feeds.server");
+    return fetchArticlesPage(data ?? {});
+  });
+
+export const getCategories = createServerFn({ method: "GET" }).handler(
+  async (): Promise<Category[]> => {
+    const { fetchCategories } = await import("./feeds.server");
+    return fetchCategories();
+  },
+);
+
+export const getCategory = createServerFn({ method: "GET" })
+  .inputValidator((data: { slug: string }) => data)
+  .handler(async ({ data }): Promise<Category | null> => {
+    const { fetchCategory } = await import("./feeds.server");
+    return fetchCategory(data.slug);
+  });
+
 export const getArticle = createServerFn({ method: "GET" })
   .inputValidator((data: { slug: string }) => data)
   .handler(async ({ data }): Promise<Article | null> => {
     const { fetchArticle } = await import("./feeds.server");
     return fetchArticle(data.slug);
   });
+
 
 export const getPodcast = createServerFn({ method: "GET" }).handler(
   async (): Promise<PodcastShow> => {
