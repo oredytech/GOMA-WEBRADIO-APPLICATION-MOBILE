@@ -12,6 +12,20 @@ export type Article = {
   link: string;
 };
 
+export type Category = {
+  id: number;
+  slug: string;
+  name: string;
+  count: number;
+};
+
+export type ArticlePage = {
+  items: Article[];
+  page: number;
+  totalPages: number;
+  total: number;
+};
+
 export type Episode = {
   id: string;
   title: string;

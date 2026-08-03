@@ -67,6 +67,50 @@ export async function fetchArticles(opts: {
   return Array.isArray(posts) ? posts.map(mapPost) : [];
 }
 
+export async function fetchArticlesPage(opts: {
+  page?: number;
+  perPage?: number;
+  search?: string;
+  categoryId?: number;
+}): Promise<import("./feeds.types").ArticlePage> {
+  const params = new URLSearchParams({
+    _embed: "1",
+    per_page: String(Math.min(opts.perPage ?? 10, 20)),
+    page: String(Math.max(1, opts.page ?? 1)),
+  });
+  if (opts.search) params.set("search", opts.search);
+  if (opts.categoryId) params.set("categories", String(opts.categoryId));
+  const res = await fetch(`${WP}/posts?${params.toString()}`, {
+    headers: { accept: "application/json" },
+  });
+  if (!res.ok) throw new Error(`WordPress request failed [${res.status}]`);
+  const totalPages = Number(res.headers.get("x-wp-totalpages") ?? "1") || 1;
+  const total = Number(res.headers.get("x-wp-total") ?? "0") || 0;
+  const posts = JSON.parse((await res.text()).replace(/^\uFEFF/, "")) as any[];
+  return {
+    items: Array.isArray(posts) ? posts.map(mapPost) : [],
+    page: Math.max(1, opts.page ?? 1),
+    totalPages,
+    total,
+  };
+}
+
+export async function fetchCategories(): Promise<import("./feeds.types").Category[]> {
+  const data = (await getJson(
+    `${WP}/categories?per_page=100&orderby=count&order=desc&hide_empty=1`,
+  )) as any[];
+  if (!Array.isArray(data)) return [];
+  return data
+    .filter((c) => c?.count > 0)
+    .map((c) => ({ id: c.id, slug: c.slug, name: decode(c.name ?? ""), count: c.count ?? 0 }));
+}
+
+export async function fetchCategory(slug: string): Promise<import("./feeds.types").Category | null> {
+  const data = (await getJson(`${WP}/categories?slug=${encodeURIComponent(slug)}`)) as any[];
+  const c = data?.[0];
+  return c ? { id: c.id, slug: c.slug, name: decode(c.name ?? ""), count: c.count ?? 0 } : null;
+}
+
 export async function fetchArticle(slug: string): Promise<Article | null> {
   const posts = (await getJson(
     `${WP}/posts?_embed=1&slug=${encodeURIComponent(slug)}`,
