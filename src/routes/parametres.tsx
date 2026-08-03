@@ -1,6 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Screen } from "@/components/Screen";
+import { EQ_PRESETS, usePlayer, type EqBands, type EqKind } from "@/context/player";
+
 
 export const Route = createFileRoute("/parametres")({
   component: Parametres,
