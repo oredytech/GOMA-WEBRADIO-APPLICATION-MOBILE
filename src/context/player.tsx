@@ -42,6 +42,39 @@ type Persisted = {
 };
 
 const KEY = "gw-player-state";
+const EQ_KEY = "gw-eq-state";
+
+export type EqBands = { bass: number; mid: number; treble: number };
+export type EqKind = "radio" | "podcast";
+
+export const EQ_FLAT: EqBands = { bass: 0, mid: 0, treble: 0 };
+
+export const EQ_PRESETS: { label: string; bands: EqBands }[] = [
+  { label: "Neutre", bands: { bass: 0, mid: 0, treble: 0 } },
+  { label: "Voix", bands: { bass: -2, mid: 4, treble: 2 } },
+  { label: "Musique", bands: { bass: 4, mid: 0, treble: 3 } },
+  { label: "Basses+", bands: { bass: 7, mid: -1, treble: 0 } },
+  { label: "Clarté", bands: { bass: -3, mid: 2, treble: 6 } },
+];
+
+type EqState = { enabled: boolean; radio: EqBands; podcast: EqBands };
+
+const DEFAULT_EQ: EqState = { enabled: false, radio: { ...EQ_FLAT }, podcast: { ...EQ_FLAT } };
+
+function readEq(): EqState {
+  if (typeof window === "undefined") return DEFAULT_EQ;
+  try {
+    const raw = JSON.parse(window.localStorage.getItem(EQ_KEY) ?? "null");
+    if (!raw) return DEFAULT_EQ;
+    return {
+      enabled: Boolean(raw.enabled),
+      radio: { ...EQ_FLAT, ...(raw.radio ?? {}) },
+      podcast: { ...EQ_FLAT, ...(raw.podcast ?? {}) },
+    };
+  } catch {
+    return DEFAULT_EQ;
+  }
+}
 
 function readPersisted(): Partial<Persisted> {
   if (typeof window === "undefined") return {};
@@ -62,6 +95,11 @@ type PlayerState = {
   duration: number;
   quality: Quality;
   rate: number;
+  eqEnabled: boolean;
+  eqSupported: boolean;
+  eq: Record<EqKind, EqBands>;
+  setEqEnabled: (v: boolean) => void;
+  setEqBands: (kind: EqKind, bands: EqBands) => void;
   setRate: (r: number) => void;
   setQuality: (q: Quality) => void;
   play: (track: Track) => void;
@@ -87,6 +125,13 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const [quality, setQualityState] = useState<Quality>("Auto");
   const [rate, setRateState] = useState(1);
   const resumeAtRef = useRef(0);
+
+  // Égaliseur (Web Audio) — appliqué à la radio et aux podcasts séparément
+  const [eqState, setEqState] = useState<EqState>(DEFAULT_EQ);
+  const [eqSupported, setEqSupported] = useState(true);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const filtersRef = useRef<{ bass: BiquadFilterNode; mid: BiquadFilterNode; treble: BiquadFilterNode } | null>(null);
+
 
   useEffect(() => {
     const audio = new Audio();
@@ -255,10 +300,71 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     } catch { /* ignore */ }
   }, [track]);
 
+  // Restauration des réglages d'égaliseur
+  useEffect(() => { setEqState(readEq()); }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try { window.localStorage.setItem(EQ_KEY, JSON.stringify(eqState)); } catch { /* quota */ }
+  }, [eqState]);
+
+  // Construction / mise à jour du graphe audio
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio || !eqState.enabled) return;
+    if (!filtersRef.current) {
+      try {
+        const Ctor = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+        if (!Ctor) { setEqSupported(false); return; }
+        const ctx = new Ctor();
+        const source = ctx.createMediaElementSource(audio);
+        const bass = ctx.createBiquadFilter();
+        bass.type = "lowshelf"; bass.frequency.value = 200;
+        const mid = ctx.createBiquadFilter();
+        mid.type = "peaking"; mid.frequency.value = 1200; mid.Q.value = 1;
+        const treble = ctx.createBiquadFilter();
+        treble.type = "highshelf"; treble.frequency.value = 4000;
+        source.connect(bass).connect(mid).connect(treble).connect(ctx.destination);
+        audioCtxRef.current = ctx;
+        filtersRef.current = { bass, mid, treble };
+      } catch {
+        setEqSupported(false);
+        return;
+      }
+    }
+    void audioCtxRef.current?.resume().catch(() => undefined);
+    const bands = eqState[(track?.kind ?? "radio") as EqKind] ?? EQ_FLAT;
+    const f = filtersRef.current;
+    if (f) {
+      f.bass.gain.value = bands.bass;
+      f.mid.gain.value = bands.mid;
+      f.treble.gain.value = bands.treble;
+    }
+  }, [eqState, track?.kind]);
+
+  // Égaliseur désactivé : gains neutres
+  useEffect(() => {
+    if (eqState.enabled) return;
+    const f = filtersRef.current;
+    if (!f) return;
+    f.bass.gain.value = 0;
+    f.mid.gain.value = 0;
+    f.treble.gain.value = 0;
+  }, [eqState.enabled]);
+
+  const setEqEnabled = useCallback((v: boolean) => setEqState((s) => ({ ...s, enabled: v })), []);
+  const setEqBands = useCallback(
+    (kind: EqKind, bands: EqBands) => setEqState((s) => ({ ...s, [kind]: bands })),
+    [],
+  );
+
   const value = useMemo<PlayerState>(() => ({
     track, playing, loading, volume, muted, progress, duration, quality, rate, setRate,
+    eqEnabled: eqState.enabled, eqSupported, eq: { radio: eqState.radio, podcast: eqState.podcast },
+    setEqEnabled, setEqBands,
     setQuality, play, toggle, stop, seek, skip, setVolume, toggleMute,
-  }), [track, playing, loading, volume, muted, progress, duration, quality, rate, setRate, setQuality, play, toggle, stop, seek, skip, setVolume, toggleMute]);
+  }), [track, playing, loading, volume, muted, progress, duration, quality, rate, setRate, eqState, eqSupported, setEqEnabled, setEqBands, setQuality, play, toggle, stop, seek, skip, setVolume, toggleMute]);
+
 
   return <PlayerContext.Provider value={value}>{children}</PlayerContext.Provider>;
 }

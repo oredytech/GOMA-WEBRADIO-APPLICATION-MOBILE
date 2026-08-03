@@ -1,6 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Screen } from "@/components/Screen";
+import { EQ_PRESETS, usePlayer, type EqBands, type EqKind } from "@/context/player";
+
 
 export const Route = createFileRoute("/parametres")({
   component: Parametres,
@@ -32,11 +34,86 @@ function Toggle({ on, onChange, label, desc }: { on: boolean; onChange: (v: bool
   );
 }
 
+const BANDS: { key: keyof EqBands; label: string }[] = [
+  { key: "bass", label: "Graves" },
+  { key: "mid", label: "Médiums" },
+  { key: "treble", label: "Aigus" },
+];
+
+function EqPanel({
+  kind,
+  title,
+  desc,
+  bands,
+  disabled,
+  onChange,
+}: {
+  kind: EqKind;
+  title: string;
+  desc: string;
+  bands: EqBands;
+  disabled: boolean;
+  onChange: (kind: EqKind, bands: EqBands) => void;
+}) {
+  const activePreset = EQ_PRESETS.find(
+    (p) => p.bands.bass === bands.bass && p.bands.mid === bands.mid && p.bands.treble === bands.treble,
+  );
+  return (
+    <div className={"rounded-2xl border border-line bg-panel p-4 shadow-soft " + (disabled ? "opacity-60" : "")}>
+      <p className="text-sm font-bold text-ink">{title}</p>
+      <p className="text-xs text-inkmute">{desc}</p>
+
+      <div className="mt-3 flex flex-wrap gap-2">
+        {EQ_PRESETS.map((p) => (
+          <button
+            key={p.label}
+            disabled={disabled}
+            onClick={() => onChange(kind, p.bands)}
+            className={
+              "rounded-full px-3 py-1.5 text-xs font-bold active:scale-95 disabled:active:scale-100 " +
+              (activePreset?.label === p.label ? "bg-brand text-white" : "border border-line bg-panel2 text-ink")
+            }
+          >
+            {p.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="mt-4 space-y-3">
+        {BANDS.map((b) => (
+          <div key={b.key}>
+            <div className="flex items-center justify-between text-xs font-semibold text-inkmute">
+              <span>{b.label}</span>
+              <span className="text-ink">{bands[b.key] > 0 ? `+${bands[b.key]}` : bands[b.key]} dB</span>
+            </div>
+            <input
+              aria-label={`${b.label} — ${title}`}
+              type="range"
+              min={-12}
+              max={12}
+              step={1}
+              disabled={disabled}
+              value={bands[b.key]}
+              onChange={(e) => onChange(kind, { ...bands, [b.key]: Number(e.target.value) })}
+              className="mt-1 h-1.5 w-full cursor-pointer appearance-none rounded-full accent-blood disabled:cursor-not-allowed"
+              style={{
+                background: `linear-gradient(to right, var(--color-brand) ${((bands[b.key] + 12) / 24) * 100}%, var(--color-line) ${((bands[b.key] + 12) / 24) * 100}%)`,
+              }}
+            />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+
 function Parametres() {
   const [dark, setDark] = useState(false);
   const [notif, setNotif] = useState(true);
   const [wifi, setWifi] = useState(true);
-  const [quality, setQuality] = useState("Auto");
+  const player = usePlayer();
+  const { quality, eq, eqEnabled, eqSupported, setEqEnabled, setEqBands } = player;
 
   useEffect(() => {
     setDark(document.documentElement.classList.contains("dark"));
@@ -61,7 +138,7 @@ function Parametres() {
             {["Auto", "Normale", "Haute"].map((q) => (
               <button
                 key={q}
-                onClick={() => setQuality(q)}
+                onClick={() => player.setQuality(q as typeof quality)}
                 className={"flex-1 rounded-full px-3 py-2 text-xs font-bold active:scale-95 " + (quality === q ? "bg-brand text-white" : "border border-line bg-panel2 text-ink")}
               >
                 {q}
@@ -69,6 +146,36 @@ function Parametres() {
             ))}
           </div>
         </div>
+
+        <h2 className="pt-2 font-display text-lg font-extrabold text-ink">Réglages du son</h2>
+        <Toggle
+          on={eqEnabled}
+          onChange={setEqEnabled}
+          label="Égaliseur"
+          desc={eqSupported ? "Ajustez graves, médiums et aigus" : "Non pris en charge sur cet appareil"}
+        />
+        {!eqSupported && (
+          <p className="px-1 text-xs text-blood">
+            L'égaliseur n'est pas disponible ici. Si le son est coupé, désactivez-le puis rechargez l'application.
+          </p>
+        )}
+        <EqPanel
+          kind="radio"
+          title="Radio en direct"
+          desc="Égaliseur appliqué au flux live"
+          bands={eq.radio}
+          disabled={!eqEnabled || !eqSupported}
+          onChange={setEqBands}
+        />
+        <EqPanel
+          kind="podcast"
+          title="Podcasts"
+          desc="Égaliseur appliqué aux épisodes"
+          bands={eq.podcast}
+          disabled={!eqEnabled || !eqSupported}
+          onChange={setEqBands}
+        />
+
       </div>
     </Screen>
   );

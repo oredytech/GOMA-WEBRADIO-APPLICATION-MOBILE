@@ -1,5 +1,13 @@
 import { queryOptions } from "@tanstack/react-query";
-import { getArticle, getArticles, getComments, getPodcast } from "./feeds.functions";
+import {
+  getArticle,
+  getArticles,
+  getArticlesPage,
+  getCategories,
+  getCategory,
+  getComments,
+  getPodcast,
+} from "./feeds.functions";
 
 export const articlesQuery = (opts: { page?: number; search?: string; perPage?: number } = {}) =>
   queryOptions({
@@ -7,6 +15,30 @@ export const articlesQuery = (opts: { page?: number; search?: string; perPage?: 
     queryFn: () => getArticles({ data: opts }),
     staleTime: 5 * 60_000,
   });
+
+export const articlesPageQuery = (
+  opts: { page?: number; perPage?: number; search?: string; categoryId?: number } = {},
+) =>
+  queryOptions({
+    queryKey: ["articles-page", opts],
+    queryFn: () => getArticlesPage({ data: opts }),
+    staleTime: 5 * 60_000,
+  });
+
+export const categoriesQuery = () =>
+  queryOptions({
+    queryKey: ["categories"],
+    queryFn: () => getCategories(),
+    staleTime: 30 * 60_000,
+  });
+
+export const categoryQuery = (slug: string) =>
+  queryOptions({
+    queryKey: ["category", slug],
+    queryFn: () => getCategory({ data: { slug } }),
+    staleTime: 30 * 60_000,
+  });
+
 
 export const articleQuery = (slug: string) =>
   queryOptions({

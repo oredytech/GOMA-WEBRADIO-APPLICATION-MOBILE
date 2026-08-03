@@ -77,7 +77,9 @@ function ArticlePage() {
   return (
     <Screen title="Article" back>
       <article className="pt-4">
-        <SmartImage src={article.image} alt={article.title} className="h-56 w-full rounded-2xl object-cover shadow-soft" fallbackClassName="h-56 w-full rounded-2xl bg-brand-deep object-contain p-10 shadow-soft" />
+        <div className="overflow-hidden rounded-2xl bg-panel2 shadow-soft">
+          <SmartImage src={article.image} alt={article.title} className="max-h-[70vh] w-full object-contain" fallbackClassName="h-56 w-full bg-brand-deep object-contain p-10" />
+        </div>
         <p className="mt-4 text-[11px] font-bold uppercase tracking-wide text-brand">{article.category}</p>
         <h1 className="mt-1 font-display text-2xl font-extrabold leading-tight text-ink">{article.title}</h1>
         <div className="mt-2 flex flex-wrap items-center gap-x-2 text-xs text-inkmute">
