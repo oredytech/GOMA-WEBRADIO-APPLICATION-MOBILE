@@ -209,10 +209,53 @@ body { font-family: "Funnel Sans", system-ui, sans-serif; -webkit-tap-highlight-
 .gw-scroll-x { scrollbar-width: none; }
 .gw-scroll-x::-webkit-scrollbar { display: none; }
 
-.gw-article-content { font-size: 1rem; line-height: 1.75; }
+.gw-article-content { font-size: 1rem; line-height: 1.8; text-align: justify; hyphens: auto; overflow-wrap: break-word; }
+.gw-article-content p, .gw-article-content li { text-align: justify; }
 .gw-article-content p { margin-bottom: 1rem; }
-.gw-article-content h2, .gw-article-content h3 { font-family: "Funnel Display", sans-serif; font-weight: 700; margin: 1.25rem 0 .5rem; }
-.gw-article-content img { border-radius: 1rem; margin: 1rem 0; width: 100%; height: auto; }
+.gw-article-content h1, .gw-article-content h2, .gw-article-content h3, .gw-article-content h4 {
+  font-family: "Funnel Display", sans-serif; font-weight: 800; margin: 1.5rem 0 .5rem; text-align: left; line-height: 1.25;
+}
+.gw-article-content h2 { font-size: 1.25rem; }
+.gw-article-content h3 { font-size: 1.1rem; }
+.gw-article-content img { border-radius: 1rem; margin: 1rem 0; width: 100%; height: auto; object-fit: contain; }
+.gw-article-content figure { margin: 1rem 0; }
+.gw-article-content figcaption { text-align: center; font-size: .8rem; color: var(--gw-ink-mute); margin-top: .35rem; }
 .gw-article-content a { color: var(--gw-brand); text-decoration: underline; }
 .gw-article-content ul { list-style: disc; padding-left: 1.25rem; margin-bottom: 1rem; }
+.gw-article-content ol { list-style: decimal; padding-left: 1.25rem; margin-bottom: 1rem; }
 .gw-article-content iframe { width: 100%; border-radius: 1rem; aspect-ratio: 16/9; }
+
+/* Citations remarquables */
+.gw-article-content blockquote {
+  position: relative;
+  margin: 1.5rem 0;
+  padding: 1.25rem 1.1rem 1.1rem 2.6rem;
+  border-left: 4px solid var(--gw-blood);
+  border-radius: 1rem;
+  background: color-mix(in srgb, var(--gw-brand) 10%, var(--gw-panel));
+  font-family: "Funnel Display", sans-serif;
+  font-size: 1.05rem;
+  font-style: italic;
+  font-weight: 600;
+  line-height: 1.6;
+  color: var(--gw-ink);
+  text-align: left;
+  box-shadow: var(--shadow-soft);
+}
+.gw-article-content blockquote::before {
+  content: "\201C";
+  position: absolute;
+  left: .7rem;
+  top: .25rem;
+  font-size: 2.75rem;
+  line-height: 1;
+  color: var(--gw-blood);
+  opacity: .75;
+}
+.gw-article-content blockquote p { text-align: left; margin-bottom: .5rem; }
+.gw-article-content blockquote p:last-child { margin-bottom: 0; }
+.gw-article-content blockquote cite {
+  display: block; margin-top: .5rem; font-size: .8rem; font-style: normal;
+  font-weight: 700; color: var(--gw-brand); text-transform: uppercase; letter-spacing: .04em;
+}
+
