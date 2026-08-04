@@ -98,6 +98,12 @@ type PlayerState = {
   eqEnabled: boolean;
   eqSupported: boolean;
   eq: Record<EqKind, EqBands>;
+  queue: Track[];
+  hasNext: boolean;
+  hasPrev: boolean;
+  setQueue: (tracks: Track[]) => void;
+  playNext: () => void;
+  playPrev: () => void;
   setEqEnabled: (v: boolean) => void;
   setEqBands: (kind: EqKind, bands: EqBands) => void;
   setRate: (r: number) => void;
@@ -109,6 +115,7 @@ type PlayerState = {
   skip: (delta: number) => void;
   setVolume: (v: number) => void;
   toggleMute: () => void;
+  setFavoriteHandler: (fn: ((track: Track) => void) | null) => void;
 };
 
 const PlayerContext = createContext<PlayerState | null>(null);
@@ -124,14 +131,18 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const [duration, setDuration] = useState(0);
   const [quality, setQualityState] = useState<Quality>("Auto");
   const [rate, setRateState] = useState(1);
+  const [queue, setQueueState] = useState<Track[]>([]);
   const resumeAtRef = useRef(0);
+  const favHandlerRef = useRef<((track: Track) => void) | null>(null);
 
   // Égaliseur (Web Audio) — appliqué à la radio et aux podcasts séparément
   const [eqState, setEqState] = useState<EqState>(DEFAULT_EQ);
   const [eqSupported, setEqSupported] = useState(true);
   const audioCtxRef = useRef<AudioContext | null>(null);
+  const sourceRef = useRef<MediaElementAudioSourceNode | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
   const filtersRef = useRef<{ bass: BiquadFilterNode; mid: BiquadFilterNode; treble: BiquadFilterNode } | null>(null);
-
+  const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const audio = new Audio();
@@ -222,6 +233,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       audio.src = next.kind === "radio" ? `${next.src}?t=${Date.now()}` : next.src;
     }
     setLoading(true);
+    void audioCtxRef.current?.resume().catch(() => undefined);
     void audio.play().catch(() => setLoading(false));
   }, [track?.id]);
 
@@ -286,19 +298,89 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     setRateState(r);
   }, []);
 
+  // ---- File d'écoute (permet de changer d'épisode depuis n'importe quel écran) ----
+  const setQueue = useCallback((tracks: Track[]) => {
+    setQueueState((prev) => {
+      if (prev.length === tracks.length && prev.every((t, i) => t.id === tracks[i]?.id)) return prev;
+      return tracks;
+    });
+  }, []);
+
+  const queueIndex = track ? queue.findIndex((t) => t.id === track.id) : -1;
+  const hasPrev = queueIndex > 0;
+  const hasNext = queueIndex >= 0 && queueIndex < queue.length - 1;
+
+  const playNext = useCallback(() => {
+    if (queueIndex >= 0 && queueIndex < queue.length - 1) play(queue[queueIndex + 1]);
+  }, [play, queue, queueIndex]);
+
+  const playPrev = useCallback(() => {
+    if (queueIndex > 0) play(queue[queueIndex - 1]);
+  }, [play, queue, queueIndex]);
+
+  const setFavoriteHandler = useCallback((fn: ((track: Track) => void) | null) => {
+    favHandlerRef.current = fn;
+  }, []);
+
+  // ---- Media Session : casque, écran verrouillé, notification ----
   useEffect(() => {
     if (typeof navigator === "undefined" || !("mediaSession" in navigator) || !track) return;
+    const ms = navigator.mediaSession;
+    const safe = (action: MediaSessionAction, handler: MediaSessionActionHandler | null) => {
+      try { ms.setActionHandler(action, handler); } catch { /* non pris en charge */ }
+    };
     try {
-      navigator.mediaSession.metadata = new MediaMetadata({
+      ms.metadata = new MediaMetadata({
         title: track.title,
         artist: track.subtitle,
         album: "GOMA WEBRADIO",
-        artwork: [{ src: track.artwork ?? "/icon-512.png", sizes: "512x512", type: "image/png" }],
+        artwork: [
+          { src: track.artwork ?? "/icon-192.png", sizes: "192x192", type: "image/png" },
+          { src: track.artwork ?? "/icon-512.png", sizes: "512x512", type: "image/png" },
+        ],
       });
-      navigator.mediaSession.setActionHandler("play", () => audioRef.current?.play());
-      navigator.mediaSession.setActionHandler("pause", () => audioRef.current?.pause());
     } catch { /* ignore */ }
-  }, [track]);
+
+    safe("play", () => { void audioRef.current?.play(); });
+    safe("pause", () => audioRef.current?.pause());
+    safe("stop", () => stop());
+    safe("previoustrack", hasPrev ? () => playPrev() : null);
+    safe("nexttrack", hasNext ? () => playNext() : null);
+    if (track.kind === "podcast") {
+      safe("seekbackward", (d) => skip(-(d.seekOffset ?? 15)));
+      safe("seekforward", (d) => skip(d.seekOffset ?? 30));
+      safe("seekto", (d) => { if (typeof d.seekTime === "number") seek(d.seekTime); });
+    } else {
+      safe("seekbackward", null);
+      safe("seekforward", null);
+      safe("seekto", null);
+    }
+    
+    // "Favori" depuis le casque / écran verrouillé
+    safe(
+      "hangup" as MediaSessionAction,
+      () => favHandlerRef.current?.(track),
+    );
+
+    return () => {
+      (["play", "pause", "stop", "previoustrack", "nexttrack", "seekbackward", "seekforward", "seekto"] as MediaSessionAction[])
+        .forEach((a) => { try { ms.setActionHandler(a, null); } catch { /* ignore */ } });
+    };
+  }, [track, hasPrev, hasNext, playNext, playPrev, seek, skip, stop]);
+
+  useEffect(() => {
+    if (typeof navigator === "undefined" || !("mediaSession" in navigator)) return;
+    try {
+      navigator.mediaSession.playbackState = playing ? "playing" : track ? "paused" : "none";
+      if (track?.kind === "podcast" && duration > 0 && Number.isFinite(duration)) {
+        navigator.mediaSession.setPositionState?.({
+          duration,
+          position: Math.min(progress, duration),
+          playbackRate: rate,
+        });
+      }
+    } catch { /* ignore */ }
+  }, [playing, track, duration, progress, rate]);
 
   // Restauration des réglages d'égaliseur
   useEffect(() => { setEqState(readEq()); }, []);
@@ -308,51 +390,102 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     try { window.localStorage.setItem(EQ_KEY, JSON.stringify(eqState)); } catch { /* quota */ }
   }, [eqState]);
 
-  // Construction / mise à jour du graphe audio
-  useEffect(() => {
+  // ---- Graphe audio : construit une seule fois, contourné quand l'EQ est off ----
+  const buildGraph = useCallback((): boolean => {
     const audio = audioRef.current;
-    if (!audio || !eqState.enabled) return;
-    if (!filtersRef.current) {
-      try {
-        const Ctor = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-        if (!Ctor) { setEqSupported(false); return; }
-        const ctx = new Ctor();
-        const source = ctx.createMediaElementSource(audio);
-        const bass = ctx.createBiquadFilter();
-        bass.type = "lowshelf"; bass.frequency.value = 200;
-        const mid = ctx.createBiquadFilter();
-        mid.type = "peaking"; mid.frequency.value = 1200; mid.Q.value = 1;
-        const treble = ctx.createBiquadFilter();
-        treble.type = "highshelf"; treble.frequency.value = 4000;
-        source.connect(bass).connect(mid).connect(treble).connect(ctx.destination);
-        audioCtxRef.current = ctx;
-        filtersRef.current = { bass, mid, treble };
-      } catch {
-        setEqSupported(false);
+    if (!audio) return false;
+    if (filtersRef.current) return true;
+    try {
+      const Ctor =
+        window.AudioContext ??
+        (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+      if (!Ctor) return false;
+      const ctx = new Ctor();
+      const source = ctx.createMediaElementSource(audio);
+      const bass = ctx.createBiquadFilter();
+      bass.type = "lowshelf"; bass.frequency.value = 200;
+      const mid = ctx.createBiquadFilter();
+      mid.type = "peaking"; mid.frequency.value = 1200; mid.Q.value = 1;
+      const treble = ctx.createBiquadFilter();
+      treble.type = "highshelf"; treble.frequency.value = 4000;
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 2048;
+      source.connect(bass).connect(mid).connect(treble).connect(analyser).connect(ctx.destination);
+      audioCtxRef.current = ctx;
+      sourceRef.current = source;
+      analyserRef.current = analyser;
+      filtersRef.current = { bass, mid, treble };
+      return true;
+    } catch {
+      return false;
+    }
+  }, []);
+
+  // Sécurité : si le flux n'autorise pas le traitement audio (CORS), le son
+  // devient muet. On le détecte et on désactive automatiquement l'égaliseur.
+  const watchForSilence = useCallback(() => {
+    const analyser = analyserRef.current;
+    const audio = audioRef.current;
+    if (!analyser || !audio) return;
+    if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+    const buffer = new Uint8Array(analyser.fftSize);
+    const started = Date.now();
+    let sawSound = false;
+    const tick = () => {
+      if (sawSound) return;
+      analyser.getByteTimeDomainData(buffer);
+      for (let i = 0; i < buffer.length; i += 8) {
+        if (Math.abs(buffer[i] - 128) > 1) { sawSound = true; break; }
+      }
+      if (sawSound) return;
+      if (Date.now() - started > 3000) {
+        if (!audio.paused && audio.currentTime > 0) {
+          // Silence confirmé pendant la lecture → repli sans égaliseur
+          try { sourceRef.current?.disconnect(); } catch { /* ignore */ }
+          try { sourceRef.current?.connect(audioCtxRef.current!.destination); } catch { /* ignore */ }
+          setEqSupported(false);
+          setEqState((s) => ({ ...s, enabled: false }));
+        }
         return;
       }
+      silenceTimerRef.current = setTimeout(tick, 400);
+    };
+    silenceTimerRef.current = setTimeout(tick, 600);
+  }, []);
+
+  useEffect(() => {
+    if (!eqState.enabled) {
+      // Contournement : la source va directement vers la sortie
+      if (sourceRef.current && audioCtxRef.current) {
+        try {
+          sourceRef.current.disconnect();
+          sourceRef.current.connect(audioCtxRef.current.destination);
+        } catch { /* ignore */ }
+      }
+      if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+      return;
     }
+    if (!buildGraph()) { setEqSupported(false); return; }
+    const f = filtersRef.current;
+    const source = sourceRef.current;
+    const analyser = analyserRef.current;
+    if (!f || !source || !analyser) return;
+    try {
+      source.disconnect();
+      source.connect(f.bass).connect(f.mid).connect(f.treble).connect(analyser).connect(audioCtxRef.current!.destination);
+    } catch { /* ignore */ }
     void audioCtxRef.current?.resume().catch(() => undefined);
     const bands = eqState[(track?.kind ?? "radio") as EqKind] ?? EQ_FLAT;
-    const f = filtersRef.current;
-    if (f) {
-      f.bass.gain.value = bands.bass;
-      f.mid.gain.value = bands.mid;
-      f.treble.gain.value = bands.treble;
-    }
-  }, [eqState, track?.kind]);
+    f.bass.gain.value = bands.bass;
+    f.mid.gain.value = bands.mid;
+    f.treble.gain.value = bands.treble;
+    watchForSilence();
+  }, [eqState, track?.kind, buildGraph, watchForSilence]);
 
-  // Égaliseur désactivé : gains neutres
-  useEffect(() => {
-    if (eqState.enabled) return;
-    const f = filtersRef.current;
-    if (!f) return;
-    f.bass.gain.value = 0;
-    f.mid.gain.value = 0;
-    f.treble.gain.value = 0;
-  }, [eqState.enabled]);
-
-  const setEqEnabled = useCallback((v: boolean) => setEqState((s) => ({ ...s, enabled: v })), []);
+  const setEqEnabled = useCallback((v: boolean) => {
+    if (v) setEqSupported(true);
+    setEqState((s) => ({ ...s, enabled: v }));
+  }, []);
   const setEqBands = useCallback(
     (kind: EqKind, bands: EqBands) => setEqState((s) => ({ ...s, [kind]: bands })),
     [],
@@ -362,8 +495,10 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     track, playing, loading, volume, muted, progress, duration, quality, rate, setRate,
     eqEnabled: eqState.enabled, eqSupported, eq: { radio: eqState.radio, podcast: eqState.podcast },
     setEqEnabled, setEqBands,
+    queue, hasNext, hasPrev, setQueue, playNext, playPrev,
+    setFavoriteHandler,
     setQuality, play, toggle, stop, seek, skip, setVolume, toggleMute,
-  }), [track, playing, loading, volume, muted, progress, duration, quality, rate, setRate, eqState, eqSupported, setEqEnabled, setEqBands, setQuality, play, toggle, stop, seek, skip, setVolume, toggleMute]);
+  }), [track, playing, loading, volume, muted, progress, duration, quality, rate, setRate, eqState, eqSupported, setEqEnabled, setEqBands, queue, hasNext, hasPrev, setQueue, playNext, playPrev, setFavoriteHandler, setQuality, play, toggle, stop, seek, skip, setVolume, toggleMute]);
 
 
   return <PlayerContext.Provider value={value}>{children}</PlayerContext.Provider>;

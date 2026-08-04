@@ -53,3 +53,12 @@ export type Comment = {
   date: string;
   content: string;
 };
+
+export type TeamMember = {
+  id: number;
+  name: string;
+  role: string;
+  avatar: string | null;
+  link: string | null;
+  slug: string;
+};

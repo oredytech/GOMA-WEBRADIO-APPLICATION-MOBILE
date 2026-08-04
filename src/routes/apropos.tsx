@@ -1,6 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { Screen } from "@/components/Screen";
+import { SmartImage } from "@/components/SmartImage";
+import { ErrorRetry, Skeleton } from "@/components/Async";
+import { teamQuery } from "@/lib/queries";
 import { CONTACT_EMAIL, LOGO_URL, RADIO_SLOGAN, SOCIALS } from "@/lib/media";
+
 
 export const Route = createFileRoute("/apropos")({
   component: APropos,
@@ -15,8 +20,56 @@ export const Route = createFileRoute("/apropos")({
   }),
 });
 
+function Team() {
+  const q = useQuery(teamQuery());
+  return (
+    <>
+      <h2 className="mt-7 mb-3 font-display text-lg font-extrabold text-ink">Notre équipe</h2>
+      {q.isPending && (
+        <div className="space-y-3">
+          {[0, 1, 2].map((i) => (
+            <Skeleton key={i} className="h-[76px] w-full rounded-2xl" />
+          ))}
+        </div>
+      )}
+      {q.isError && (
+        <ErrorRetry
+          message="Impossible de charger l'équipe."
+          onRetry={() => void q.refetch()}
+          busy={q.isFetching}
+        />
+      )}
+      {q.data && q.data.length === 0 && (
+        <p className="text-sm text-inkmute">L'équipe sera présentée très bientôt.</p>
+      )}
+      <div className="space-y-3">
+        {q.data?.map((m) => (
+          <div key={m.id} className="flex items-center gap-3 rounded-2xl border border-line bg-panel p-3 shadow-soft">
+            <div className="h-14 w-14 shrink-0 overflow-hidden rounded-full bg-panel2">
+              <SmartImage
+                src={m.avatar}
+                alt={m.name}
+                className="h-full w-full object-cover"
+                fallbackClassName="h-full w-full bg-brand-deep object-contain p-3"
+              />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-bold text-ink">{m.name}</p>
+              <p className="line-clamp-2 text-xs text-inkmute">{m.role}</p>
+            </div>
+            <span className="material-symbols-outlined shrink-0 text-brand" style={{ fontSize: 20 }}>
+              mic
+            </span>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
+
 function APropos() {
   return (
+
     <Screen title="À propos" back>
       <div className="mt-6 flex flex-col items-center text-center">
         <img src={LOGO_URL} alt="GOMA WEBRADIO" className="h-24 w-24 rounded-3xl bg-[#011b40] object-contain p-4" />
@@ -47,7 +100,10 @@ function APropos() {
         ))}
       </div>
 
+      <Team />
+
       <h2 className="mt-7 mb-3 font-display text-lg font-extrabold text-ink">Suivez-nous</h2>
+
       <div className="grid grid-cols-2 gap-3">
         {SOCIALS.map((s) => (
           <a

@@ -7,6 +7,7 @@ import {
   getCategory,
   getComments,
   getPodcast,
+  getTeam,
 } from "./feeds.functions";
 
 export const articlesQuery = (opts: { page?: number; search?: string; perPage?: number } = {}) =>
@@ -59,4 +60,11 @@ export const commentsQuery = (postId: number) =>
     queryKey: ["comments", postId],
     queryFn: () => getComments({ data: { postId } }),
     staleTime: 60_000,
+  });
+
+export const teamQuery = () =>
+  queryOptions({
+    queryKey: ["team"],
+    queryFn: () => getTeam(),
+    staleTime: 30 * 60_000,
   });

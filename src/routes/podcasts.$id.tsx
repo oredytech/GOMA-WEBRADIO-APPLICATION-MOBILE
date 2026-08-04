@@ -9,6 +9,7 @@ import { formatTime, prettyDuration, shareContent } from "@/lib/format";
 import { TimeAgo } from "@/components/TimeAgo";
 import { ErrorRetry, Skeleton } from "@/components/Async";
 import { useFavorites } from "@/hooks/useFavorites";
+import { useDownload } from "@/hooks/useDownloads";
 import type { Episode } from "@/lib/feeds.types";
 
 export const Route = createFileRoute("/podcasts/$id")({
@@ -54,6 +55,28 @@ function EpisodePage() {
   const endedRef = useRef(false);
 
   const episodes = useMemo(() => show?.episodes ?? [], [show]);
+
+  // File d'écoute + action "favori" disponible depuis le casque / écran verrouillé
+  useEffect(() => {
+    if (episodes.length) player.setQueue(episodes.map(toTrack));
+  }, [episodes, player]);
+
+  useEffect(() => {
+    player.setFavoriteHandler((t) => {
+      const found = episodes.find((e) => e.id === t.id);
+      if (!found) return;
+      toggleFav({
+        id: found.id,
+        kind: "podcast",
+        title: found.title,
+        subtitle: found.author,
+        image: found.image,
+        href: `/podcasts/${found.id}`,
+        audio: found.audio,
+      });
+    });
+    return () => player.setFavoriteHandler(null);
+  }, [episodes, player, toggleFav]);
   const index = episodes.findIndex((e) => e.id === id);
   const ep = index >= 0 ? episodes[index] : undefined;
   const isCurrent = track?.id === id;
@@ -272,16 +295,7 @@ function EpisodePage() {
         </div>
 
         <div className="mt-4 flex flex-wrap gap-2">
-          <a
-            href={ep.audio}
-            download
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center gap-2 rounded-full border border-line bg-panel px-4 py-2.5 text-sm font-bold text-ink active:scale-95"
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: 20 }}>download</span>
-            Télécharger
-          </a>
+          <DownloadButton ep={ep} />
           <button
             onClick={() => shareContent({ title: ep.title })}
             className="inline-flex items-center gap-2 rounded-full border border-line bg-panel px-4 py-2.5 text-sm font-bold text-ink active:scale-95"
@@ -290,6 +304,7 @@ function EpisodePage() {
             Partager
           </button>
         </div>
+
 
         <p className="mt-5 whitespace-pre-line text-sm leading-relaxed text-ink/90">{ep.description}</p>
 
@@ -320,5 +335,61 @@ function EpisodePage() {
         </div>
       </div>
     </Screen>
+  );
+}
+
+function DownloadButton({ ep }: { ep: Episode }) {
+  const dl = useDownload({ id: ep.id, title: ep.title, audio: ep.audio });
+  const pct = Math.round(dl.progress * 100);
+
+  if (dl.status === "done") {
+    return (
+      <div className="inline-flex items-center gap-2 rounded-full border border-brand/40 bg-brand/10 px-4 py-2.5 text-sm font-bold text-brand">
+        <span className="material-symbols-outlined" style={{ fontSize: 20, fontVariationSettings: "'FILL' 1" }}>
+          download_done
+        </span>
+        Téléchargé
+        <button onClick={() => void dl.save()} className="underline underline-offset-2">Enregistrer</button>
+        <button aria-label="Supprimer le téléchargement" onClick={dl.remove} className="text-inkmute">
+          <span className="material-symbols-outlined" style={{ fontSize: 18 }}>delete</span>
+        </button>
+      </div>
+    );
+  }
+
+  if (dl.status === "downloading") {
+    return (
+      <button
+        onClick={dl.pause}
+        className="relative inline-flex items-center gap-2 overflow-hidden rounded-full border border-line bg-panel px-4 py-2.5 text-sm font-bold text-ink active:scale-95"
+      >
+        <span
+          className="absolute inset-y-0 left-0 bg-brand/20"
+          style={{ width: `${pct}%` }}
+          aria-hidden
+        />
+        <span className="material-symbols-outlined relative animate-spin" style={{ fontSize: 20 }}>progress_activity</span>
+        <span className="relative">{pct ? `${pct}%` : "Téléchargement…"}</span>
+        <span className="relative material-symbols-outlined text-inkmute" style={{ fontSize: 18 }}>pause</span>
+      </button>
+    );
+  }
+
+  const label =
+    dl.status === "error" ? "Reprendre" : dl.status === "paused" ? `Reprendre (${pct}%)` : "Télécharger";
+
+  return (
+    <button
+      onClick={dl.start}
+      className={
+        "inline-flex items-center gap-2 rounded-full border px-4 py-2.5 text-sm font-bold active:scale-95 " +
+        (dl.status === "error" ? "border-blood/40 bg-blood/10 text-blood" : "border-line bg-panel text-ink")
+      }
+    >
+      <span className="material-symbols-outlined" style={{ fontSize: 20 }}>
+        {dl.status === "error" ? "refresh" : "download"}
+      </span>
+      {label}
+    </button>
   );
 }
