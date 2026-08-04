@@ -104,8 +104,8 @@ export async function startDownload(ep: { id: string; title: string; audio: stri
     const res = await fetch(ep.audio, {
       signal: controller.signal,
       headers: offset > 0 ? { Range: `bytes=${offset}-` } : undefined,
-almost: undefined as never,
-    } as RequestInit);
+    });
+
     if (!res.ok && res.status !== 206) throw new Error(`Téléchargement impossible (${res.status})`);
 
     const resumed = res.status === 206 && offset > 0;
