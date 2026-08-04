@@ -272,16 +272,7 @@ function EpisodePage() {
         </div>
 
         <div className="mt-4 flex flex-wrap gap-2">
-          <a
-            href={ep.audio}
-            download
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center gap-2 rounded-full border border-line bg-panel px-4 py-2.5 text-sm font-bold text-ink active:scale-95"
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: 20 }}>download</span>
-            Télécharger
-          </a>
+          <DownloadButton ep={ep} />
           <button
             onClick={() => shareContent({ title: ep.title })}
             className="inline-flex items-center gap-2 rounded-full border border-line bg-panel px-4 py-2.5 text-sm font-bold text-ink active:scale-95"
@@ -290,6 +281,7 @@ function EpisodePage() {
             Partager
           </button>
         </div>
+
 
         <p className="mt-5 whitespace-pre-line text-sm leading-relaxed text-ink/90">{ep.description}</p>
 
