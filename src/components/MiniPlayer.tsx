@@ -1,8 +1,10 @@
-import { Link, useLocation, useNavigate } from "@tanstack/react-router";
+import { Link, useLocation } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { usePlayer, type Track } from "@/context/player";
 import { LOGO_URL } from "@/lib/media";
 import { podcastQuery } from "@/lib/queries";
+import { useNowPlaying } from "@/hooks/useNowPlaying";
 import type { Episode } from "@/lib/feeds.types";
 
 function toTrack(ep: Episode): Track {
@@ -17,25 +19,22 @@ function toTrack(ep: Episode): Track {
 }
 
 export function MiniPlayer() {
-  const { track, playing, loading, toggle, stop, play } = usePlayer();
+  const { track, playing, loading, toggle, stop, setQueue, playNext, playPrev, hasNext, hasPrev } = usePlayer();
   const { pathname } = useLocation();
-  const navigate = useNavigate();
   const isPodcast = track?.kind === "podcast";
   const { data: show } = useQuery({ ...podcastQuery(), enabled: isPodcast });
+  const nowPlaying = useNowPlaying();
+
+  // File d'écoute globale : permet de changer d'épisode depuis n'importe quel écran
+  useEffect(() => {
+    if (!show?.episodes?.length) return;
+    setQueue(show.episodes.map(toTrack));
+  }, [show, setQueue]);
 
   if (!track || pathname === "/radio") return null;
   if (isPodcast && pathname === `/podcasts/${track.id}`) return null;
 
-  const episodes = show?.episodes ?? [];
-  const index = isPodcast ? episodes.findIndex((e) => e.id === track.id) : -1;
-  const prev = index > 0 ? episodes[index - 1] : undefined;
-  const next = index >= 0 && index < episodes.length - 1 ? episodes[index + 1] : undefined;
-
-  const goTo = (ep?: Episode) => {
-    if (!ep) return;
-    play(toTrack(ep));
-    void navigate({ to: "/podcasts/$id", params: { id: ep.id } });
-  };
+  const subtitle = track.kind === "radio" ? (nowPlaying ?? track.subtitle) : track.subtitle;
 
   return (
     <div className="fixed bottom-[calc(68px+4px+env(safe-area-inset-bottom))] left-0 right-0 z-40 px-4">
@@ -47,20 +46,20 @@ export function MiniPlayer() {
             className="flex min-w-0 flex-1 items-center gap-3"
           >
             <Artwork track={track} />
-            <Meta track={track} />
+            <Meta track={track} subtitle={subtitle} />
           </Link>
         ) : (
           <Link to="/radio" className="flex min-w-0 flex-1 items-center gap-3">
             <Artwork track={track} />
-            <Meta track={track} />
+            <Meta track={track} subtitle={subtitle} />
           </Link>
         )}
 
         {isPodcast && (
           <button
             aria-label="Épisode précédent"
-            onClick={() => goTo(prev)}
-            disabled={!prev}
+            onClick={() => playPrev()}
+            disabled={!hasPrev}
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-ink active:scale-95 disabled:opacity-30"
           >
             <span className="material-symbols-outlined" style={{ fontSize: 24, fontVariationSettings: "'FILL' 1" }}>
@@ -85,8 +84,8 @@ export function MiniPlayer() {
         {isPodcast && (
           <button
             aria-label="Épisode suivant"
-            onClick={() => goTo(next)}
-            disabled={!next}
+            onClick={() => playNext()}
+            disabled={!hasNext}
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-ink active:scale-95 disabled:opacity-30"
           >
             <span className="material-symbols-outlined" style={{ fontSize: 24, fontVariationSettings: "'FILL' 1" }}>
@@ -124,11 +123,11 @@ function Artwork({ track }: { track: Track }) {
   );
 }
 
-function Meta({ track }: { track: Track }) {
+function Meta({ track, subtitle }: { track: Track; subtitle: string }) {
   return (
     <div className="min-w-0 flex-1">
       <p className="truncate font-display text-sm font-bold text-ink">{track.title}</p>
-      <p className="truncate text-xs text-inkmute">{track.subtitle}</p>
+      <p className="truncate text-xs text-inkmute">{subtitle}</p>
     </div>
   );
 }
