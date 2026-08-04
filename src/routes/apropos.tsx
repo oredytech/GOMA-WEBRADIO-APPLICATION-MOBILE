@@ -100,7 +100,10 @@ function APropos() {
         ))}
       </div>
 
+      <Team />
+
       <h2 className="mt-7 mb-3 font-display text-lg font-extrabold text-ink">Suivez-nous</h2>
+
       <div className="grid grid-cols-2 gap-3">
         {SOCIALS.map((s) => (
           <a
