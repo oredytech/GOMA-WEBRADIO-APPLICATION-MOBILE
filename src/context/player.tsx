@@ -358,7 +358,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       safe("seekforward", null);
       safe("seekto", null);
     }
-    safe("togglecamera", null);
+    
     // "Favori" depuis le casque / écran verrouillé
     safe(
       "hangup" as MediaSessionAction,
