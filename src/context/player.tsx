@@ -115,7 +115,6 @@ type PlayerState = {
   skip: (delta: number) => void;
   setVolume: (v: number) => void;
   toggleMute: () => void;
-  onFavorite: ((track: Track) => void) | null;
   setFavoriteHandler: (fn: ((track: Track) => void) | null) => void;
 };
 
@@ -135,7 +134,6 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const [queue, setQueueState] = useState<Track[]>([]);
   const resumeAtRef = useRef(0);
   const favHandlerRef = useRef<((track: Track) => void) | null>(null);
-  const [favHandler, setFavHandler] = useState<((track: Track) => void) | null>(null);
 
   // Égaliseur (Web Audio) — appliqué à la radio et aux podcasts séparément
   const [eqState, setEqState] = useState<EqState>(DEFAULT_EQ);
@@ -322,7 +320,6 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
 
   const setFavoriteHandler = useCallback((fn: ((track: Track) => void) | null) => {
     favHandlerRef.current = fn;
-    setFavHandler(() => fn);
   }, []);
 
   // ---- Media Session : casque, écran verrouillé, notification ----
@@ -362,14 +359,14 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     // "Favori" depuis le casque / écran verrouillé
     safe(
       "hangup" as MediaSessionAction,
-      favHandlerRef.current ? () => favHandlerRef.current?.(track) : null,
+      () => favHandlerRef.current?.(track),
     );
 
     return () => {
       (["play", "pause", "stop", "previoustrack", "nexttrack", "seekbackward", "seekforward", "seekto"] as MediaSessionAction[])
         .forEach((a) => { try { ms.setActionHandler(a, null); } catch { /* ignore */ } });
     };
-  }, [track, hasPrev, hasNext, playNext, playPrev, seek, skip, stop, favHandler]);
+  }, [track, hasPrev, hasNext, playNext, playPrev, seek, skip, stop]);
 
   useEffect(() => {
     if (typeof navigator === "undefined" || !("mediaSession" in navigator)) return;
@@ -499,9 +496,9 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     eqEnabled: eqState.enabled, eqSupported, eq: { radio: eqState.radio, podcast: eqState.podcast },
     setEqEnabled, setEqBands,
     queue, hasNext, hasPrev, setQueue, playNext, playPrev,
-    onFavorite: favHandler, setFavoriteHandler,
+    setFavoriteHandler,
     setQuality, play, toggle, stop, seek, skip, setVolume, toggleMute,
-  }), [track, playing, loading, volume, muted, progress, duration, quality, rate, setRate, eqState, eqSupported, setEqEnabled, setEqBands, queue, hasNext, hasPrev, setQueue, playNext, playPrev, favHandler, setFavoriteHandler, setQuality, play, toggle, stop, seek, skip, setVolume, toggleMute]);
+  }), [track, playing, loading, volume, muted, progress, duration, quality, rate, setRate, eqState, eqSupported, setEqEnabled, setEqBands, queue, hasNext, hasPrev, setQueue, playNext, playPrev, setFavoriteHandler, setQuality, play, toggle, stop, seek, skip, setVolume, toggleMute]);
 
 
   return <PlayerContext.Provider value={value}>{children}</PlayerContext.Provider>;
