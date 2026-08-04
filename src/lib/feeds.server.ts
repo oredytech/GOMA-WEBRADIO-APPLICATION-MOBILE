@@ -216,3 +216,16 @@ export async function createComment(input: {
       : "Merci ! Votre commentaire est publié.",
   };
 }
+
+export async function fetchTeam(): Promise<import("./feeds.types").TeamMember[]> {
+  const data = (await getJson(`${WP}/users?per_page=100&orderby=name&order=asc`)) as any[];
+  if (!Array.isArray(data)) return [];
+  return data.map((u) => ({
+    id: u.id,
+    name: decode(u.name ?? ""),
+    role: decode(u.description ?? "") || "Journaliste",
+    avatar: u.avatar_urls?.["96"] ?? u.avatar_urls?.["48"] ?? null,
+    link: u.link ?? null,
+    slug: u.slug ?? "",
+  }));
+}

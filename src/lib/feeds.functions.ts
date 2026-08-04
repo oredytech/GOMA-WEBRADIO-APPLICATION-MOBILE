@@ -73,3 +73,10 @@ export const sendComment = createServerFn({ method: "POST" })
       content: data.content,
     });
   });
+
+export const getTeam = createServerFn({ method: "GET" }).handler(
+  async (): Promise<import("./feeds.types").TeamMember[]> => {
+    const { fetchTeam } = await import("./feeds.server");
+    return fetchTeam();
+  },
+);
