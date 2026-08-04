@@ -1,6 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { Screen } from "@/components/Screen";
+import { SmartImage } from "@/components/SmartImage";
+import { ErrorRetry, Skeleton } from "@/components/Async";
+import { teamQuery } from "@/lib/queries";
 import { CONTACT_EMAIL, LOGO_URL, RADIO_SLOGAN, SOCIALS } from "@/lib/media";
+
 
 export const Route = createFileRoute("/apropos")({
   component: APropos,
