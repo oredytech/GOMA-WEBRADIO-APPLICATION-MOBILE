@@ -5,16 +5,18 @@ import { SmartImage } from "@/components/SmartImage";
 import { TimeAgo } from "@/components/TimeAgo";
 import { AsyncSection, CardListSkeleton, TilesSkeleton } from "@/components/Async";
 import { LIVE_TRACK, usePlayer } from "@/context/player";
-import { articlesQuery, podcastQuery } from "@/lib/queries";
+import { articlesQuery, podcastQuery, videosQuery } from "@/lib/queries";
 import { prettyDuration, shareContent } from "@/lib/format";
 import { useNowPlaying } from "@/hooks/useNowPlaying";
-import { PLAY_BG_URL, RADIO_NAME, RADIO_SLOGAN, SOCIALS, YOUTUBE_URL } from "@/lib/media";
+import { Marquee } from "@/components/Marquee";
+import { PLAY_BG_URL, RADIO_NAME, RADIO_SLOGAN, SOCIALS } from "@/lib/media";
 
 export const Route = createFileRoute("/")({
   component: Home,
   loader: ({ context }) => {
     void context.queryClient.prefetchQuery(articlesQuery({ perPage: 6 }));
     void context.queryClient.prefetchQuery(podcastQuery());
+    void context.queryClient.prefetchQuery(videosQuery());
   },
   head: () => ({
     meta: [
