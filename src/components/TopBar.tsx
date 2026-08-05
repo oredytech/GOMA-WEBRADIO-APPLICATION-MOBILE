@@ -41,7 +41,7 @@ export function TopBar({
           {title ?? "GOMA WEBRADIO"}
         </h1>
 
-        <div className="flex items-center justify-end gap-1">
+        <div className="flex items-center justify-end gap-0.5">
           {action ?? (
             <>
               <Link
@@ -62,6 +62,13 @@ export function TopBar({
                     {unreadCount > 9 ? "9+" : unreadCount}
                   </span>
                 )}
+              </Link>
+              <Link
+                to="/more"
+                aria-label="Plus"
+                className="flex h-10 w-10 items-center justify-center rounded-full text-ink active:scale-95"
+              >
+                <span className="material-symbols-outlined">menu</span>
               </Link>
             </>
           )}
