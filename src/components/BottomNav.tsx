@@ -7,7 +7,7 @@ const items: Item[] = [
   { to: "/radio", icon: "radio", label: "Radio" },
   { to: "/podcasts", icon: "podcasts", label: "Podcasts" },
   { to: "/articles", icon: "feed", label: "Articles" },
-  { to: "/more", icon: "menu", label: "Plus" },
+  { to: "/videos", icon: "smart_display", label: "Vidéos" },
 ];
 
 export function BottomNav() {
