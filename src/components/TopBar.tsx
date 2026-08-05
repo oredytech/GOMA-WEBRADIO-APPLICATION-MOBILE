@@ -19,7 +19,9 @@ export function TopBar({
     <header
       className={
         "sticky top-0 z-40 " +
-        (transparent ? "bg-transparent" : "border-b border-line/70 bg-paper/90 backdrop-blur-xl")
+        (transparent
+          ? "bg-gradient-to-b from-paper/80 to-transparent backdrop-blur-[2px]"
+          : "border-b border-line/70 bg-paper/90 backdrop-blur-xl")
       }
     >
       <div className="mx-auto grid h-14 max-w-2xl grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 px-4">

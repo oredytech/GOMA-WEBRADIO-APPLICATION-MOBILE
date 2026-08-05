@@ -5,6 +5,7 @@ import { usePlayer, type Track } from "@/context/player";
 import { LOGO_URL } from "@/lib/media";
 import { podcastQuery } from "@/lib/queries";
 import { useNowPlaying } from "@/hooks/useNowPlaying";
+import { Marquee } from "@/components/Marquee";
 import type { Episode } from "@/lib/feeds.types";
 
 function toTrack(ep: Episode): Track {
@@ -23,7 +24,7 @@ export function MiniPlayer() {
   const { pathname } = useLocation();
   const isPodcast = track?.kind === "podcast";
   const { data: show } = useQuery({ ...podcastQuery(), enabled: isPodcast });
-  const nowPlaying = useNowPlaying();
+  const { title: nowTitle } = useNowPlaying();
 
   // File d'écoute globale : permet de changer d'épisode depuis n'importe quel écran
   useEffect(() => {
@@ -34,7 +35,7 @@ export function MiniPlayer() {
   if (!track || pathname === "/radio") return null;
   if (isPodcast && pathname === `/podcasts/${track.id}`) return null;
 
-  const subtitle = track.kind === "radio" ? (nowPlaying ?? track.subtitle) : track.subtitle;
+  const subtitle = track.kind === "radio" ? (nowTitle ?? track.subtitle) : track.subtitle;
 
   return (
     <div className="fixed bottom-[calc(68px+4px+env(safe-area-inset-bottom))] left-0 right-0 z-40 px-4">
@@ -126,8 +127,8 @@ function Artwork({ track }: { track: Track }) {
 function Meta({ track, subtitle }: { track: Track; subtitle: string }) {
   return (
     <div className="min-w-0 flex-1">
-      <p className="truncate font-display text-sm font-bold text-ink">{track.title}</p>
-      <p className="truncate text-xs text-inkmute">{subtitle}</p>
+      <Marquee text={track.title} className="font-display text-sm font-bold text-ink" />
+      <Marquee text={subtitle} className="text-xs text-inkmute" />
     </div>
   );
 }

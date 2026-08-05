@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as VideosRouteImport } from './routes/videos'
 import { Route as RechercheRouteImport } from './routes/recherche'
 import { Route as RadioRouteImport } from './routes/radio'
 import { Route as ProgrammesRouteImport } from './routes/programmes'
@@ -24,6 +25,11 @@ import { Route as PodcastsIdRouteImport } from './routes/podcasts.$id'
 import { Route as CategoriesSlugRouteImport } from './routes/categories.$slug'
 import { Route as ArticlesSlugRouteImport } from './routes/articles.$slug'
 
+const VideosRoute = VideosRouteImport.update({
+  id: '/videos',
+  path: '/videos',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RechercheRoute = RechercheRouteImport.update({
   id: '/recherche',
   path: '/recherche',
@@ -105,6 +111,7 @@ export interface FileRoutesByFullPath {
   '/programmes': typeof ProgrammesRoute
   '/radio': typeof RadioRoute
   '/recherche': typeof RechercheRoute
+  '/videos': typeof VideosRoute
   '/articles/$slug': typeof ArticlesSlugRoute
   '/categories/$slug': typeof CategoriesSlugRoute
   '/podcasts/$id': typeof PodcastsIdRoute
@@ -121,6 +128,7 @@ export interface FileRoutesByTo {
   '/programmes': typeof ProgrammesRoute
   '/radio': typeof RadioRoute
   '/recherche': typeof RechercheRoute
+  '/videos': typeof VideosRoute
   '/articles/$slug': typeof ArticlesSlugRoute
   '/categories/$slug': typeof CategoriesSlugRoute
   '/podcasts/$id': typeof PodcastsIdRoute
@@ -138,6 +146,7 @@ export interface FileRoutesById {
   '/programmes': typeof ProgrammesRoute
   '/radio': typeof RadioRoute
   '/recherche': typeof RechercheRoute
+  '/videos': typeof VideosRoute
   '/articles/$slug': typeof ArticlesSlugRoute
   '/categories/$slug': typeof CategoriesSlugRoute
   '/podcasts/$id': typeof PodcastsIdRoute
@@ -156,6 +165,7 @@ export interface FileRouteTypes {
     | '/programmes'
     | '/radio'
     | '/recherche'
+    | '/videos'
     | '/articles/$slug'
     | '/categories/$slug'
     | '/podcasts/$id'
@@ -172,6 +182,7 @@ export interface FileRouteTypes {
     | '/programmes'
     | '/radio'
     | '/recherche'
+    | '/videos'
     | '/articles/$slug'
     | '/categories/$slug'
     | '/podcasts/$id'
@@ -188,6 +199,7 @@ export interface FileRouteTypes {
     | '/programmes'
     | '/radio'
     | '/recherche'
+    | '/videos'
     | '/articles/$slug'
     | '/categories/$slug'
     | '/podcasts/$id'
@@ -205,6 +217,7 @@ export interface RootRouteChildren {
   ProgrammesRoute: typeof ProgrammesRoute
   RadioRoute: typeof RadioRoute
   RechercheRoute: typeof RechercheRoute
+  VideosRoute: typeof VideosRoute
   ArticlesSlugRoute: typeof ArticlesSlugRoute
   CategoriesSlugRoute: typeof CategoriesSlugRoute
   PodcastsIdRoute: typeof PodcastsIdRoute
@@ -214,6 +227,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/videos': {
+      id: '/videos'
+      path: '/videos'
+      fullPath: '/videos'
+      preLoaderRoute: typeof VideosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/recherche': {
       id: '/recherche'
       path: '/recherche'
@@ -325,6 +345,7 @@ const rootRouteChildren: RootRouteChildren = {
   ProgrammesRoute: ProgrammesRoute,
   RadioRoute: RadioRoute,
   RechercheRoute: RechercheRoute,
+  VideosRoute: VideosRoute,
   ArticlesSlugRoute: ArticlesSlugRoute,
   CategoriesSlugRoute: CategoriesSlugRoute,
   PodcastsIdRoute: PodcastsIdRoute,
