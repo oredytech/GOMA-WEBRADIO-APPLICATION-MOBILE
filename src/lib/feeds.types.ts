@@ -62,3 +62,14 @@ export type TeamMember = {
   link: string | null;
   slug: string;
 };
+
+export type Video = {
+  id: string;
+  title: string;
+  description: string;
+  date: string;
+  thumbnail: string;
+  url: string;
+  author: string;
+  views: number | null;
+};
