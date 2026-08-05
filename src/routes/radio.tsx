@@ -8,6 +8,7 @@ import { LIVE_TRACK, usePlayer, type Quality } from "@/context/player";
 import { prettyDuration, shareContent } from "@/lib/format";
 import { useFavorites } from "@/hooks/useFavorites";
 import { useNowPlaying } from "@/hooks/useNowPlaying";
+import { Marquee } from "@/components/Marquee";
 import { podcastQuery } from "@/lib/queries";
 import { LOGO_URL, PLAY_BG_URL, RADIO_NAME, RADIO_SLOGAN } from "@/lib/media";
 
@@ -33,7 +34,7 @@ const qualities: Quality[] = ["Auto", "Normale", "Haute"];
 function Radio() {
   const { track, playing, loading, toggle, volume, setVolume, muted, toggleMute, quality, setQuality } = usePlayer();
   const { toggle: toggleFav, isFavorite } = useFavorites();
-  const nowPlaying = useNowPlaying();
+  const { title: nowTitle, next: nextTitle } = useNowPlaying();
   const podcastQ = useQuery(podcastQuery());
   const [toast, setToast] = useState<string | null>(null);
   const isRadio = track?.kind === "radio";
@@ -92,10 +93,19 @@ function Radio() {
           <span className="inline-flex items-center gap-2 rounded-full bg-blood px-3 py-1 text-[11px] font-extrabold uppercase tracking-widest text-white">
             <span className="h-2 w-2 animate-pulse rounded-full bg-white" /> Live
           </span>
-          <h1 className="mt-3 font-display text-3xl font-extrabold leading-tight text-white">
-            {nowPlaying ?? RADIO_NAME}
-          </h1>
-          <p className="mt-1 text-sm text-white/75">{nowPlaying ? RADIO_NAME : RADIO_SLOGAN}</p>
+          <div className="mt-3">
+            <Marquee
+              text={nowTitle ?? RADIO_NAME}
+              className="text-center font-display text-lg font-extrabold leading-tight text-white"
+            />
+          </div>
+          {nextTitle ? (
+            <div className="mt-1">
+              <Marquee text={`Suivant · ${nextTitle}`} className="text-center text-xs text-white/70" />
+            </div>
+          ) : (
+            <p className="mt-1 text-sm text-white/75">{nowTitle ? RADIO_NAME : RADIO_SLOGAN}</p>
+          )}
         </div>
 
         {/* Barre live */}

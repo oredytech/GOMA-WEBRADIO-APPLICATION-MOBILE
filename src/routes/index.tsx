@@ -5,16 +5,18 @@ import { SmartImage } from "@/components/SmartImage";
 import { TimeAgo } from "@/components/TimeAgo";
 import { AsyncSection, CardListSkeleton, TilesSkeleton } from "@/components/Async";
 import { LIVE_TRACK, usePlayer } from "@/context/player";
-import { articlesQuery, podcastQuery } from "@/lib/queries";
+import { articlesQuery, podcastQuery, videosQuery } from "@/lib/queries";
 import { prettyDuration, shareContent } from "@/lib/format";
 import { useNowPlaying } from "@/hooks/useNowPlaying";
-import { PLAY_BG_URL, RADIO_NAME, RADIO_SLOGAN, SOCIALS, YOUTUBE_URL } from "@/lib/media";
+import { Marquee } from "@/components/Marquee";
+import { PLAY_BG_URL, RADIO_NAME, RADIO_SLOGAN, SOCIALS } from "@/lib/media";
 
 export const Route = createFileRoute("/")({
   component: Home,
   loader: ({ context }) => {
     void context.queryClient.prefetchQuery(articlesQuery({ perPage: 6 }));
     void context.queryClient.prefetchQuery(podcastQuery());
+    void context.queryClient.prefetchQuery(videosQuery());
   },
   head: () => ({
     meta: [
@@ -35,29 +37,38 @@ function Home() {
   const { track, playing, loading, toggle } = usePlayer();
   const articlesQ = useQuery(articlesQuery({ perPage: 6 }));
   const podcastQ = useQuery(podcastQuery());
-  const nowPlaying = useNowPlaying();
+  const videosQ = useQuery(videosQuery());
+  const { title: nowTitle, next: nextTitle } = useNowPlaying();
   const isLive = track?.kind === "radio" && playing;
   const isLoadingLive = track?.kind === "radio" && loading;
 
   const episodes = podcastQ.data?.episodes ?? [];
-  const [latest, ...rest] = episodes;
+  const videos = videosQ.data ?? [];
 
   return (
-    <Screen>
-      {/* Live player */}
-      <section className="pt-4">
-        <div className="relative overflow-hidden rounded-2xl shadow-lift">
-          <img src={PLAY_BG_URL} alt="Écoute en direct" className="h-72 w-full object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#011b40] via-[#011b40]/55 to-transparent" />
-          <div className="absolute inset-x-0 bottom-0 space-y-3 p-4">
+    <Screen transparentBar>
+      {/* Live player — l'image déborde derrière l'en-tête */}
+      <section className="-mx-4 -mt-14">
+        <div className="relative overflow-hidden rounded-b-3xl shadow-lift">
+          <img src={PLAY_BG_URL} alt="Écoute en direct" className="h-[26rem] w-full object-cover object-top" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#011b40] via-[#011b40]/55 to-[#011b40]/25" />
+          <div className="absolute inset-x-0 bottom-0 space-y-3 px-4 pb-5 pt-16">
             <span className="inline-flex items-center gap-2 rounded-full bg-blood px-3 py-1 text-[11px] font-extrabold uppercase tracking-widest text-white">
               <span className="h-2 w-2 animate-pulse rounded-full bg-white" /> En direct
             </span>
-            <div>
-              <h2 className="line-clamp-2 font-display text-2xl font-extrabold leading-tight text-white">
-                {nowPlaying ?? RADIO_NAME}
-              </h2>
-              <p className="text-sm text-white/80">{nowPlaying ? RADIO_NAME : RADIO_SLOGAN}</p>
+            <div className="min-w-0">
+              <p className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-white/60">
+                {nowTitle ? "En cours" : RADIO_NAME}
+              </p>
+              <Marquee
+                text={nowTitle ?? RADIO_NAME}
+                className="font-display text-base font-extrabold leading-tight text-white"
+              />
+              {nextTitle ? (
+                <Marquee text={`Suivant · ${nextTitle}`} className="mt-0.5 text-xs text-white/70" />
+              ) : (
+                <p className="mt-0.5 truncate text-xs text-white/70">{RADIO_SLOGAN}</p>
+              )}
             </div>
             <div className="flex items-center gap-3">
               <button
@@ -103,6 +114,7 @@ function Home() {
         </div>
       </section>
 
+
       {/* Quick access */}
       <section className="mt-5 grid grid-cols-2 gap-3">
         {[
@@ -122,7 +134,7 @@ function Home() {
         ))}
       </section>
 
-      {/* Recent podcasts — effet album */}
+      {/* Podcasts récents */}
       <section className="mt-7">
         <SectionHeader title="Podcasts récents" />
         <AsyncSection
@@ -133,41 +145,30 @@ function Home() {
           errorMessage="Impossible de charger les podcasts."
           skeleton={<TilesSkeleton />}
         >
-          {latest ? (
-            <div className="flex items-end gap-3">
-              {/* Dernier épisode : pochette principale */}
-              <article className="w-1/2 shrink-0">
-                <div className="relative aspect-square overflow-hidden rounded-2xl bg-panel2 shadow-lift ring-1 ring-line">
-                  <Link to="/podcasts/$id" params={{ id: latest.id }} className="block h-full w-full">
-                    <SmartImage src={latest.image} alt={latest.title} className="h-full w-full object-cover" loading="eager" />
-                  </Link>
-                  <span className="absolute left-2 top-2 rounded-full bg-blood px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-white">
-                    Nouveau
-                  </span>
-                  <EpisodeButton ep={latest} big />
-                </div>
-                <h3 className="mt-2 line-clamp-2 text-sm font-bold leading-snug text-ink">{latest.title}</h3>
-                <p className="mt-0.5 text-xs text-inkmute">{prettyDuration(latest.duration)}</p>
-              </article>
-
-              {/* Épisodes précédents : pile d'albums */}
-              <div className="gw-scroll-x -mr-4 flex flex-1 gap-2 overflow-x-auto pb-2 pr-4">
-                {rest.slice(0, 7).map((ep, i) => (
-                  <article
-                    key={ep.id}
-                    className="w-28 shrink-0"
-                    style={{ transform: `translateY(${Math.min(i, 3) * 3}px) scale(${1 - Math.min(i, 3) * 0.02})` }}
-                  >
-                    <div className="relative aspect-square overflow-hidden rounded-xl bg-panel2 shadow-soft ring-1 ring-line">
-                      <Link to="/podcasts/$id" params={{ id: ep.id }} className="block h-full w-full">
-                        <SmartImage src={ep.image} alt={ep.title} className="h-full w-full object-cover" />
-                      </Link>
-                      <EpisodeButton ep={ep} />
-                    </div>
-                    <h3 className="mt-1.5 line-clamp-2 text-xs font-bold leading-snug text-ink">{ep.title}</h3>
-                  </article>
-                ))}
-              </div>
+          {episodes.length > 0 ? (
+            <div className="gw-scroll-x -mx-4 flex gap-4 overflow-x-auto px-4 pb-2">
+              {episodes.slice(0, 8).map((ep, i) => (
+                <article key={ep.id} className="w-44 shrink-0">
+                  <div className="relative aspect-square overflow-hidden rounded-2xl bg-panel2 shadow-lift ring-1 ring-line">
+                    <Link to="/podcasts/$id" params={{ id: ep.id }} className="block h-full w-full">
+                      <SmartImage
+                        src={ep.image}
+                        alt={ep.title}
+                        className="h-full w-full object-cover"
+                        loading={i === 0 ? "eager" : "lazy"}
+                      />
+                    </Link>
+                    {i === 0 && (
+                      <span className="absolute left-2 top-2 rounded-full bg-blood px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-white">
+                        Nouveau
+                      </span>
+                    )}
+                    <EpisodeButton ep={ep} big />
+                  </div>
+                  <h3 className="mt-2 line-clamp-2 text-sm font-bold leading-snug text-ink">{ep.title}</h3>
+                  <p className="mt-0.5 text-xs text-inkmute">{prettyDuration(ep.duration)}</p>
+                </article>
+              ))}
             </div>
           ) : (
             <p className="text-sm text-inkmute">Aucun épisode disponible pour le moment.</p>
@@ -175,29 +176,6 @@ function Home() {
         </AsyncSection>
       </section>
 
-      {/* Vidéos */}
-      <section className="mt-7">
-        <SectionHeader title="Vidéos" />
-        <a
-          href={YOUTUBE_URL}
-          target="_blank"
-          rel="noreferrer"
-          className="flex items-center gap-4 rounded-2xl border border-line bg-panel p-4 shadow-soft active:scale-[0.99]"
-        >
-          <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-blood/15 text-blood">
-            <span className="material-symbols-outlined" style={{ fontSize: 30, fontVariationSettings: "'FILL' 1" }}>
-              smart_display
-            </span>
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="block font-display text-base font-extrabold text-ink">Chaîne YouTube</span>
-            <span className="block truncate text-xs text-inkmute">
-              Reportages, émissions filmées et directs vidéo
-            </span>
-          </span>
-          <span className="material-symbols-outlined shrink-0 text-inkmute">open_in_new</span>
-        </a>
-      </section>
 
       {/* News */}
       <section className="mt-7">
@@ -242,6 +220,51 @@ function Home() {
           Voir toutes les actualités
         </Link>
       </section>
+
+      {/* Vidéos */}
+      <section className="mt-7">
+        <SectionHeader title="Vidéos" />
+        <AsyncSection
+          isPending={videosQ.isPending}
+          isError={videosQ.isError}
+          isFetching={videosQ.isFetching}
+          onRetry={() => void videosQ.refetch()}
+          errorMessage="Impossible de charger les vidéos."
+          skeleton={<TilesSkeleton />}
+        >
+          <div className="gw-scroll-x -mx-4 flex gap-4 overflow-x-auto px-4 pb-2">
+            {videos.slice(0, 6).map((v) => (
+              <Link
+                key={v.id}
+                to="/videos"
+                className="w-64 shrink-0"
+              >
+                <div className="relative aspect-video overflow-hidden rounded-2xl bg-panel2 shadow-lift ring-1 ring-line">
+                  <SmartImage src={v.thumbnail} alt={v.title} className="h-full w-full object-cover" />
+                  <span className="absolute inset-0 flex items-center justify-center bg-black/25">
+                    <span className="flex h-12 w-12 items-center justify-center rounded-full bg-blood text-white shadow-lift">
+                      <span className="material-symbols-outlined" style={{ fontSize: 28, fontVariationSettings: "'FILL' 1" }}>
+                        play_arrow
+                      </span>
+                    </span>
+                  </span>
+                </div>
+                <h3 className="mt-2 line-clamp-2 text-sm font-bold leading-snug text-ink">{v.title}</h3>
+                <p className="mt-0.5 text-xs text-inkmute"><TimeAgo date={v.date} /></p>
+              </Link>
+            ))}
+            {videos.length === 0 && <p className="text-sm text-inkmute">Aucune vidéo disponible.</p>}
+          </div>
+        </AsyncSection>
+        <Link
+          to="/videos"
+          className="mt-4 flex items-center justify-center rounded-full border border-line bg-panel py-3 text-sm font-bold text-ink active:scale-95"
+        >
+          Voir toutes les vidéos
+        </Link>
+      </section>
+
+
 
       {/* Réseaux sociaux */}
       <section className="mt-7">

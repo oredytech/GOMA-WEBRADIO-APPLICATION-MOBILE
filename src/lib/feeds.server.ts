@@ -229,3 +229,31 @@ export async function fetchTeam(): Promise<import("./feeds.types").TeamMember[]>
     slug: u.slug ?? "",
   }));
 }
+
+const YT_CHANNEL_ID = "UC6RtsClui6cA5msIiWWxTZQ";
+
+export async function fetchVideos(): Promise<import("./feeds.types").Video[]> {
+  const res = await fetch(
+    `https://www.youtube.com/feeds/videos.xml?channel_id=${YT_CHANNEL_ID}`,
+    { headers: { accept: "application/atom+xml" } },
+  );
+  if (!res.ok) throw new Error(`YouTube feed failed [${res.status}]`);
+  const xml = await res.text();
+  const entries = xml.split("<entry>").slice(1);
+  return entries.map((e) => {
+    const pick = (re: RegExp) => e.match(re)?.[1] ?? "";
+    const id = pick(/<yt:videoId>([^<]+)<\/yt:videoId>/);
+    const views = pick(/<media:statistics\s+views="(\d+)"/);
+    return {
+      id,
+      title: decode(pick(/<media:title>([\s\S]*?)<\/media:title>/) || pick(/<title>([\s\S]*?)<\/title>/)),
+      description: decode(pick(/<media:description>([\s\S]*?)<\/media:description>/)).slice(0, 400),
+      date: pick(/<published>([^<]+)<\/published>/),
+      thumbnail:
+        pick(/<media:thumbnail\s+url="([^"]+)"/) || `https://i.ytimg.com/vi/${id}/hqdefault.jpg`,
+      url: `https://www.youtube.com/watch?v=${id}`,
+      author: "GOMA WEBRADIO",
+      views: views ? Number(views) : null,
+    };
+  }).filter((v) => v.id);
+}

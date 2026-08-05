@@ -35,6 +35,7 @@
   --animate-fade-up: fade-up 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both;
   --animate-eq: eq 1s ease-in-out infinite;
   --animate-pulse-slow: pulse-slow 3.2s ease-in-out infinite;
+  --animate-marquee: gw-marquee 14s linear infinite;
 
   --radius-sm: calc(var(--radius) - 4px);
 
@@ -198,6 +199,10 @@ body { font-family: "Funnel Sans", system-ui, sans-serif; -webkit-tap-highlight-
 @keyframes eq {
   0%, 100% { transform: scaleY(0.35); }
   50% { transform: scaleY(1); }
+}
+@keyframes gw-marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
 }
 @keyframes pulse-slow {
   0%, 100% { transform: scale(1); opacity: 1; }

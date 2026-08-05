@@ -42,39 +42,7 @@ type Persisted = {
 };
 
 const KEY = "gw-player-state";
-const EQ_KEY = "gw-eq-state";
 
-export type EqBands = { bass: number; mid: number; treble: number };
-export type EqKind = "radio" | "podcast";
-
-export const EQ_FLAT: EqBands = { bass: 0, mid: 0, treble: 0 };
-
-export const EQ_PRESETS: { label: string; bands: EqBands }[] = [
-  { label: "Neutre", bands: { bass: 0, mid: 0, treble: 0 } },
-  { label: "Voix", bands: { bass: -2, mid: 4, treble: 2 } },
-  { label: "Musique", bands: { bass: 4, mid: 0, treble: 3 } },
-  { label: "Basses+", bands: { bass: 7, mid: -1, treble: 0 } },
-  { label: "Clarté", bands: { bass: -3, mid: 2, treble: 6 } },
-];
-
-type EqState = { enabled: boolean; radio: EqBands; podcast: EqBands };
-
-const DEFAULT_EQ: EqState = { enabled: false, radio: { ...EQ_FLAT }, podcast: { ...EQ_FLAT } };
-
-function readEq(): EqState {
-  if (typeof window === "undefined") return DEFAULT_EQ;
-  try {
-    const raw = JSON.parse(window.localStorage.getItem(EQ_KEY) ?? "null");
-    if (!raw) return DEFAULT_EQ;
-    return {
-      enabled: Boolean(raw.enabled),
-      radio: { ...EQ_FLAT, ...(raw.radio ?? {}) },
-      podcast: { ...EQ_FLAT, ...(raw.podcast ?? {}) },
-    };
-  } catch {
-    return DEFAULT_EQ;
-  }
-}
 
 function readPersisted(): Partial<Persisted> {
   if (typeof window === "undefined") return {};
@@ -95,17 +63,12 @@ type PlayerState = {
   duration: number;
   quality: Quality;
   rate: number;
-  eqEnabled: boolean;
-  eqSupported: boolean;
-  eq: Record<EqKind, EqBands>;
   queue: Track[];
   hasNext: boolean;
   hasPrev: boolean;
   setQueue: (tracks: Track[]) => void;
   playNext: () => void;
   playPrev: () => void;
-  setEqEnabled: (v: boolean) => void;
-  setEqBands: (kind: EqKind, bands: EqBands) => void;
   setRate: (r: number) => void;
   setQuality: (q: Quality) => void;
   play: (track: Track) => void;
@@ -135,14 +98,6 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const resumeAtRef = useRef(0);
   const favHandlerRef = useRef<((track: Track) => void) | null>(null);
 
-  // Égaliseur (Web Audio) — appliqué à la radio et aux podcasts séparément
-  const [eqState, setEqState] = useState<EqState>(DEFAULT_EQ);
-  const [eqSupported, setEqSupported] = useState(true);
-  const audioCtxRef = useRef<AudioContext | null>(null);
-  const sourceRef = useRef<MediaElementAudioSourceNode | null>(null);
-  const analyserRef = useRef<AnalyserNode | null>(null);
-  const filtersRef = useRef<{ bass: BiquadFilterNode; mid: BiquadFilterNode; treble: BiquadFilterNode } | null>(null);
-  const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const audio = new Audio();
@@ -233,7 +188,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       audio.src = next.kind === "radio" ? `${next.src}?t=${Date.now()}` : next.src;
     }
     setLoading(true);
-    void audioCtxRef.current?.resume().catch(() => undefined);
+    
     void audio.play().catch(() => setLoading(false));
   }, [track?.id]);
 
@@ -382,123 +337,13 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     } catch { /* ignore */ }
   }, [playing, track, duration, progress, rate]);
 
-  // Restauration des réglages d'égaliseur
-  useEffect(() => { setEqState(readEq()); }, []);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    try { window.localStorage.setItem(EQ_KEY, JSON.stringify(eqState)); } catch { /* quota */ }
-  }, [eqState]);
-
-  // ---- Graphe audio : construit une seule fois, contourné quand l'EQ est off ----
-  const buildGraph = useCallback((): boolean => {
-    const audio = audioRef.current;
-    if (!audio) return false;
-    if (filtersRef.current) return true;
-    try {
-      const Ctor =
-        window.AudioContext ??
-        (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-      if (!Ctor) return false;
-      const ctx = new Ctor();
-      const source = ctx.createMediaElementSource(audio);
-      const bass = ctx.createBiquadFilter();
-      bass.type = "lowshelf"; bass.frequency.value = 200;
-      const mid = ctx.createBiquadFilter();
-      mid.type = "peaking"; mid.frequency.value = 1200; mid.Q.value = 1;
-      const treble = ctx.createBiquadFilter();
-      treble.type = "highshelf"; treble.frequency.value = 4000;
-      const analyser = ctx.createAnalyser();
-      analyser.fftSize = 2048;
-      source.connect(bass).connect(mid).connect(treble).connect(analyser).connect(ctx.destination);
-      audioCtxRef.current = ctx;
-      sourceRef.current = source;
-      analyserRef.current = analyser;
-      filtersRef.current = { bass, mid, treble };
-      return true;
-    } catch {
-      return false;
-    }
-  }, []);
-
-  // Sécurité : si le flux n'autorise pas le traitement audio (CORS), le son
-  // devient muet. On le détecte et on désactive automatiquement l'égaliseur.
-  const watchForSilence = useCallback(() => {
-    const analyser = analyserRef.current;
-    const audio = audioRef.current;
-    if (!analyser || !audio) return;
-    if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
-    const buffer = new Uint8Array(analyser.fftSize);
-    const started = Date.now();
-    let sawSound = false;
-    const tick = () => {
-      if (sawSound) return;
-      analyser.getByteTimeDomainData(buffer);
-      for (let i = 0; i < buffer.length; i += 8) {
-        if (Math.abs(buffer[i] - 128) > 1) { sawSound = true; break; }
-      }
-      if (sawSound) return;
-      if (Date.now() - started > 3000) {
-        if (!audio.paused && audio.currentTime > 0) {
-          // Silence confirmé pendant la lecture → repli sans égaliseur
-          try { sourceRef.current?.disconnect(); } catch { /* ignore */ }
-          try { sourceRef.current?.connect(audioCtxRef.current!.destination); } catch { /* ignore */ }
-          setEqSupported(false);
-          setEqState((s) => ({ ...s, enabled: false }));
-        }
-        return;
-      }
-      silenceTimerRef.current = setTimeout(tick, 400);
-    };
-    silenceTimerRef.current = setTimeout(tick, 600);
-  }, []);
-
-  useEffect(() => {
-    if (!eqState.enabled) {
-      // Contournement : la source va directement vers la sortie
-      if (sourceRef.current && audioCtxRef.current) {
-        try {
-          sourceRef.current.disconnect();
-          sourceRef.current.connect(audioCtxRef.current.destination);
-        } catch { /* ignore */ }
-      }
-      if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
-      return;
-    }
-    if (!buildGraph()) { setEqSupported(false); return; }
-    const f = filtersRef.current;
-    const source = sourceRef.current;
-    const analyser = analyserRef.current;
-    if (!f || !source || !analyser) return;
-    try {
-      source.disconnect();
-      source.connect(f.bass).connect(f.mid).connect(f.treble).connect(analyser).connect(audioCtxRef.current!.destination);
-    } catch { /* ignore */ }
-    void audioCtxRef.current?.resume().catch(() => undefined);
-    const bands = eqState[(track?.kind ?? "radio") as EqKind] ?? EQ_FLAT;
-    f.bass.gain.value = bands.bass;
-    f.mid.gain.value = bands.mid;
-    f.treble.gain.value = bands.treble;
-    watchForSilence();
-  }, [eqState, track?.kind, buildGraph, watchForSilence]);
-
-  const setEqEnabled = useCallback((v: boolean) => {
-    if (v) setEqSupported(true);
-    setEqState((s) => ({ ...s, enabled: v }));
-  }, []);
-  const setEqBands = useCallback(
-    (kind: EqKind, bands: EqBands) => setEqState((s) => ({ ...s, [kind]: bands })),
-    [],
-  );
 
   const value = useMemo<PlayerState>(() => ({
     track, playing, loading, volume, muted, progress, duration, quality, rate, setRate,
-    eqEnabled: eqState.enabled, eqSupported, eq: { radio: eqState.radio, podcast: eqState.podcast },
-    setEqEnabled, setEqBands,
     queue, hasNext, hasPrev, setQueue, playNext, playPrev,
     setFavoriteHandler,
     setQuality, play, toggle, stop, seek, skip, setVolume, toggleMute,
-  }), [track, playing, loading, volume, muted, progress, duration, quality, rate, setRate, eqState, eqSupported, setEqEnabled, setEqBands, queue, hasNext, hasPrev, setQueue, playNext, playPrev, setFavoriteHandler, setQuality, play, toggle, stop, seek, skip, setVolume, toggleMute]);
+  }), [track, playing, loading, volume, muted, progress, duration, quality, rate, setRate, queue, hasNext, hasPrev, setQueue, playNext, playPrev, setFavoriteHandler, setQuality, play, toggle, stop, seek, skip, setVolume, toggleMute]);
 
 
   return <PlayerContext.Provider value={value}>{children}</PlayerContext.Provider>;

@@ -8,6 +8,7 @@ import {
   getComments,
   getPodcast,
   getTeam,
+  getVideos,
 } from "./feeds.functions";
 
 export const articlesQuery = (opts: { page?: number; search?: string; perPage?: number } = {}) =>
@@ -67,4 +68,11 @@ export const teamQuery = () =>
     queryKey: ["team"],
     queryFn: () => getTeam(),
     staleTime: 30 * 60_000,
+  });
+
+export const videosQuery = () =>
+  queryOptions({
+    queryKey: ["videos"],
+    queryFn: () => getVideos(),
+    staleTime: 15 * 60_000,
   });

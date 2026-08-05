@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { articlesQuery, podcastQuery } from "@/lib/queries";
+import { articlesQuery, podcastQuery, videosQuery } from "@/lib/queries";
 
 export type NotificationItem = {
   id: string;
-  kind: "article" | "episode";
+  kind: "article" | "episode" | "video";
   icon: string;
   title: string;
   desc: string;
@@ -26,6 +26,7 @@ function readSeen(): number {
 export function useNotifications() {
   const articlesQ = useQuery(articlesQuery({ perPage: 10 }));
   const podcastQ = useQuery(podcastQuery());
+  const videosQ = useQuery(videosQuery());
   const [seen, setSeen] = useState(0);
   const [hydrated, setHydrated] = useState(false);
 
@@ -62,11 +63,21 @@ export function useNotifications() {
       href: `/podcasts/${e.id}`,
       image: e.image,
     }));
-    return [...articles, ...episodes]
+    const videos: NotificationItem[] = (videosQ.data ?? []).slice(0, 12).map((v) => ({
+      id: `video-${v.id}`,
+      kind: "video",
+      icon: "smart_display",
+      title: "Nouvelle vidéo publiée",
+      desc: v.title,
+      date: v.date,
+      href: "/videos",
+      image: v.thumbnail,
+    }));
+    return [...articles, ...episodes, ...videos]
       .filter((n) => !Number.isNaN(new Date(n.date).getTime()))
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
       .slice(0, 25);
-  }, [articlesQ.data, podcastQ.data]);
+  }, [articlesQ.data, podcastQ.data, videosQ.data]);
 
   const unread = useMemo(
     () => (hydrated ? items.filter((n) => new Date(n.date).getTime() > seen) : []),
@@ -111,12 +122,13 @@ export function useNotifications() {
     items,
     unread,
     unreadCount: unread.length,
-    isPending: articlesQ.isPending || podcastQ.isPending,
-    isError: articlesQ.isError && podcastQ.isError,
-    isFetching: articlesQ.isFetching || podcastQ.isFetching,
+    isPending: articlesQ.isPending || podcastQ.isPending || videosQ.isPending,
+    isError: articlesQ.isError && podcastQ.isError && videosQ.isError,
+    isFetching: articlesQ.isFetching || podcastQ.isFetching || videosQ.isFetching,
     refetch: () => {
       void articlesQ.refetch();
       void podcastQ.refetch();
+      void videosQ.refetch();
     },
     markAllRead,
     enablePush,

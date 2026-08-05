@@ -80,3 +80,10 @@ export const getTeam = createServerFn({ method: "GET" }).handler(
     return fetchTeam();
   },
 );
+
+export const getVideos = createServerFn({ method: "GET" }).handler(
+  async (): Promise<import("./feeds.types").Video[]> => {
+    const { fetchVideos } = await import("./feeds.server");
+    return fetchVideos();
+  },
+);

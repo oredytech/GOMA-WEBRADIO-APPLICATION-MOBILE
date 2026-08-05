@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Screen } from "@/components/Screen";
-import { LOGO_URL } from "@/lib/media";
+import { LOGO_URL, RADIO_SLOGAN } from "@/lib/media";
 
 export const Route = createFileRoute("/more")({
   component: More,
@@ -16,6 +16,7 @@ export const Route = createFileRoute("/more")({
 });
 
 const links = [
+  { to: "/videos", icon: "smart_display", label: "Vidéos", desc: "Reportages et émissions filmées" },
   { to: "/programmes", icon: "calendar_month", label: "Programmes", desc: "Grille des émissions" },
   { to: "/favoris", icon: "favorite", label: "Favoris", desc: "Podcasts et articles enregistrés" },
   { to: "/notifications", icon: "notifications", label: "Notifications", desc: "Alertes et rappels" },
@@ -30,7 +31,7 @@ function More() {
         <img src={LOGO_URL} alt="GOMA WEBRADIO" className="h-14 w-14 shrink-0 rounded-2xl bg-[#011b40] object-contain p-2" />
         <div className="min-w-0">
           <h2 className="truncate font-display text-lg font-extrabold text-ink">GOMA WEBRADIO</h2>
-          <p className="truncate text-xs text-inkmute">La voix de Goma · Nord-Kivu, RDC</p>
+          <p className="truncate text-xs text-inkmute">{RADIO_SLOGAN}</p>
         </div>
       </div>
 

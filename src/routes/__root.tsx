@@ -74,7 +74,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
       { name: "theme-color", content: "#011b40" },
-      { title: "GOMA WEBRADIO — La voix de Goma en direct" },
+      { title: "GOMA WEBRADIO — Fasi ya ndule na infos za palais" },
       {
         name: "description",
         content:

@@ -14,7 +14,7 @@ export const Route = createFileRoute("/apropos")({
       { title: "À propos — GOMA WEBRADIO" },
       { name: "description", content: "GOMA WEBRADIO, média digital de Goma : radio, podcasts et actualités du Nord-Kivu." },
       { property: "og:title", content: "À propos — GOMA WEBRADIO" },
-      { property: "og:description", content: "La voix de Goma, au service de l'information." },
+      { property: "og:description", content: "Fasi ya ndule na infos za palais." },
     ],
     links: [{ rel: "canonical", href: "/apropos" }],
   }),
