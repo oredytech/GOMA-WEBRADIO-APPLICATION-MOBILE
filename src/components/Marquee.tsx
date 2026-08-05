@@ -39,9 +39,9 @@ export function Marquee({
   return (
     <div ref={wrapRef} className={"relative w-full overflow-hidden " + className}>
       {overflow ? (
-        <div className="flex w-max gap-12 animate-marquee" style={{ animationDuration: `${duration}s` }}>
-          <span ref={innerRef} className="whitespace-nowrap">{text}</span>
-          <span aria-hidden className="whitespace-nowrap">{text}</span>
+        <div className="flex w-max animate-marquee" style={{ animationDuration: `${duration}s` }}>
+          <span ref={innerRef} className="whitespace-nowrap pr-12">{text}</span>
+          <span aria-hidden className="whitespace-nowrap pr-12">{text}</span>
         </div>
       ) : (
         <span ref={innerRef} className="block truncate whitespace-nowrap">{text}</span>
