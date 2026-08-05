@@ -35,29 +35,38 @@ function Home() {
   const { track, playing, loading, toggle } = usePlayer();
   const articlesQ = useQuery(articlesQuery({ perPage: 6 }));
   const podcastQ = useQuery(podcastQuery());
-  const nowPlaying = useNowPlaying();
+  const videosQ = useQuery(videosQuery());
+  const { title: nowTitle, next: nextTitle } = useNowPlaying();
   const isLive = track?.kind === "radio" && playing;
   const isLoadingLive = track?.kind === "radio" && loading;
 
   const episodes = podcastQ.data?.episodes ?? [];
-  const [latest, ...rest] = episodes;
+  const videos = videosQ.data ?? [];
 
   return (
-    <Screen>
-      {/* Live player */}
-      <section className="pt-4">
-        <div className="relative overflow-hidden rounded-2xl shadow-lift">
-          <img src={PLAY_BG_URL} alt="Écoute en direct" className="h-72 w-full object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#011b40] via-[#011b40]/55 to-transparent" />
-          <div className="absolute inset-x-0 bottom-0 space-y-3 p-4">
+    <Screen transparentBar>
+      {/* Live player — l'image déborde derrière l'en-tête */}
+      <section className="-mx-4 -mt-14">
+        <div className="relative overflow-hidden rounded-b-3xl shadow-lift">
+          <img src={PLAY_BG_URL} alt="Écoute en direct" className="h-[26rem] w-full object-cover object-top" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#011b40] via-[#011b40]/55 to-[#011b40]/25" />
+          <div className="absolute inset-x-0 bottom-0 space-y-3 px-4 pb-5 pt-16">
             <span className="inline-flex items-center gap-2 rounded-full bg-blood px-3 py-1 text-[11px] font-extrabold uppercase tracking-widest text-white">
               <span className="h-2 w-2 animate-pulse rounded-full bg-white" /> En direct
             </span>
-            <div>
-              <h2 className="line-clamp-2 font-display text-2xl font-extrabold leading-tight text-white">
-                {nowPlaying ?? RADIO_NAME}
-              </h2>
-              <p className="text-sm text-white/80">{nowPlaying ? RADIO_NAME : RADIO_SLOGAN}</p>
+            <div className="min-w-0">
+              <p className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-white/60">
+                {nowTitle ? "En cours" : RADIO_NAME}
+              </p>
+              <Marquee
+                text={nowTitle ?? RADIO_NAME}
+                className="font-display text-base font-extrabold leading-tight text-white"
+              />
+              {nextTitle ? (
+                <Marquee text={`Suivant · ${nextTitle}`} className="mt-0.5 text-xs text-white/70" />
+              ) : (
+                <p className="mt-0.5 truncate text-xs text-white/70">{RADIO_SLOGAN}</p>
+              )}
             </div>
             <div className="flex items-center gap-3">
               <button
@@ -102,6 +111,7 @@ function Home() {
           </div>
         </div>
       </section>
+
 
       {/* Quick access */}
       <section className="mt-5 grid grid-cols-2 gap-3">
