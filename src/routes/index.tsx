@@ -132,7 +132,7 @@ function Home() {
         ))}
       </section>
 
-      {/* Recent podcasts — effet album */}
+      {/* Podcasts récents */}
       <section className="mt-7">
         <SectionHeader title="Podcasts récents" />
         <AsyncSection
@@ -143,41 +143,30 @@ function Home() {
           errorMessage="Impossible de charger les podcasts."
           skeleton={<TilesSkeleton />}
         >
-          {latest ? (
-            <div className="flex items-end gap-3">
-              {/* Dernier épisode : pochette principale */}
-              <article className="w-1/2 shrink-0">
-                <div className="relative aspect-square overflow-hidden rounded-2xl bg-panel2 shadow-lift ring-1 ring-line">
-                  <Link to="/podcasts/$id" params={{ id: latest.id }} className="block h-full w-full">
-                    <SmartImage src={latest.image} alt={latest.title} className="h-full w-full object-cover" loading="eager" />
-                  </Link>
-                  <span className="absolute left-2 top-2 rounded-full bg-blood px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-white">
-                    Nouveau
-                  </span>
-                  <EpisodeButton ep={latest} big />
-                </div>
-                <h3 className="mt-2 line-clamp-2 text-sm font-bold leading-snug text-ink">{latest.title}</h3>
-                <p className="mt-0.5 text-xs text-inkmute">{prettyDuration(latest.duration)}</p>
-              </article>
-
-              {/* Épisodes précédents : pile d'albums */}
-              <div className="gw-scroll-x -mr-4 flex flex-1 gap-2 overflow-x-auto pb-2 pr-4">
-                {rest.slice(0, 7).map((ep, i) => (
-                  <article
-                    key={ep.id}
-                    className="w-28 shrink-0"
-                    style={{ transform: `translateY(${Math.min(i, 3) * 3}px) scale(${1 - Math.min(i, 3) * 0.02})` }}
-                  >
-                    <div className="relative aspect-square overflow-hidden rounded-xl bg-panel2 shadow-soft ring-1 ring-line">
-                      <Link to="/podcasts/$id" params={{ id: ep.id }} className="block h-full w-full">
-                        <SmartImage src={ep.image} alt={ep.title} className="h-full w-full object-cover" />
-                      </Link>
-                      <EpisodeButton ep={ep} />
-                    </div>
-                    <h3 className="mt-1.5 line-clamp-2 text-xs font-bold leading-snug text-ink">{ep.title}</h3>
-                  </article>
-                ))}
-              </div>
+          {episodes.length > 0 ? (
+            <div className="gw-scroll-x -mx-4 flex gap-4 overflow-x-auto px-4 pb-2">
+              {episodes.slice(0, 8).map((ep, i) => (
+                <article key={ep.id} className="w-44 shrink-0">
+                  <div className="relative aspect-square overflow-hidden rounded-2xl bg-panel2 shadow-lift ring-1 ring-line">
+                    <Link to="/podcasts/$id" params={{ id: ep.id }} className="block h-full w-full">
+                      <SmartImage
+                        src={ep.image}
+                        alt={ep.title}
+                        className="h-full w-full object-cover"
+                        loading={i === 0 ? "eager" : "lazy"}
+                      />
+                    </Link>
+                    {i === 0 && (
+                      <span className="absolute left-2 top-2 rounded-full bg-blood px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-white">
+                        Nouveau
+                      </span>
+                    )}
+                    <EpisodeButton ep={ep} big />
+                  </div>
+                  <h3 className="mt-2 line-clamp-2 text-sm font-bold leading-snug text-ink">{ep.title}</h3>
+                  <p className="mt-0.5 text-xs text-inkmute">{prettyDuration(ep.duration)}</p>
+                </article>
+              ))}
             </div>
           ) : (
             <p className="text-sm text-inkmute">Aucun épisode disponible pour le moment.</p>
@@ -185,29 +174,6 @@ function Home() {
         </AsyncSection>
       </section>
 
-      {/* Vidéos */}
-      <section className="mt-7">
-        <SectionHeader title="Vidéos" />
-        <a
-          href={YOUTUBE_URL}
-          target="_blank"
-          rel="noreferrer"
-          className="flex items-center gap-4 rounded-2xl border border-line bg-panel p-4 shadow-soft active:scale-[0.99]"
-        >
-          <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-blood/15 text-blood">
-            <span className="material-symbols-outlined" style={{ fontSize: 30, fontVariationSettings: "'FILL' 1" }}>
-              smart_display
-            </span>
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="block font-display text-base font-extrabold text-ink">Chaîne YouTube</span>
-            <span className="block truncate text-xs text-inkmute">
-              Reportages, émissions filmées et directs vidéo
-            </span>
-          </span>
-          <span className="material-symbols-outlined shrink-0 text-inkmute">open_in_new</span>
-        </a>
-      </section>
 
       {/* News */}
       <section className="mt-7">
