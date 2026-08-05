@@ -219,6 +219,51 @@ function Home() {
         </Link>
       </section>
 
+      {/* Vidéos */}
+      <section className="mt-7">
+        <SectionHeader title="Vidéos" />
+        <AsyncSection
+          isPending={videosQ.isPending}
+          isError={videosQ.isError}
+          isFetching={videosQ.isFetching}
+          onRetry={() => void videosQ.refetch()}
+          errorMessage="Impossible de charger les vidéos."
+          skeleton={<TilesSkeleton />}
+        >
+          <div className="gw-scroll-x -mx-4 flex gap-4 overflow-x-auto px-4 pb-2">
+            {videos.slice(0, 6).map((v) => (
+              <Link
+                key={v.id}
+                to="/videos"
+                className="w-64 shrink-0"
+              >
+                <div className="relative aspect-video overflow-hidden rounded-2xl bg-panel2 shadow-lift ring-1 ring-line">
+                  <SmartImage src={v.thumbnail} alt={v.title} className="h-full w-full object-cover" />
+                  <span className="absolute inset-0 flex items-center justify-center bg-black/25">
+                    <span className="flex h-12 w-12 items-center justify-center rounded-full bg-blood text-white shadow-lift">
+                      <span className="material-symbols-outlined" style={{ fontSize: 28, fontVariationSettings: "'FILL' 1" }}>
+                        play_arrow
+                      </span>
+                    </span>
+                  </span>
+                </div>
+                <h3 className="mt-2 line-clamp-2 text-sm font-bold leading-snug text-ink">{v.title}</h3>
+                <p className="mt-0.5 text-xs text-inkmute"><TimeAgo date={v.date} /></p>
+              </Link>
+            ))}
+            {videos.length === 0 && <p className="text-sm text-inkmute">Aucune vidéo disponible.</p>}
+          </div>
+        </AsyncSection>
+        <Link
+          to="/videos"
+          className="mt-4 flex items-center justify-center rounded-full border border-line bg-panel py-3 text-sm font-bold text-ink active:scale-95"
+        >
+          Voir toutes les vidéos
+        </Link>
+      </section>
+
+
+
       {/* Réseaux sociaux */}
       <section className="mt-7">
         <SectionHeader title="Suivez-nous" />
