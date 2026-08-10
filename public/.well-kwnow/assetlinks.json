@@ -3,6 +3,6 @@
       "target": {
         "namespace": "android_app",
         "package_name": "app.vercel.goma_webradio_application_mobile.twa",
-        "sha256_cert_fingerprints": ["71:32:65:54:1C:28:A3:AE:9F:0F:F3:EE:B3:FC:00:1B:28:33:C2:40:8B:C9:8A:5A:7E:E1:8C:52:61:2C:F5:3E"]
+        "sha256_cert_fingerprints": ["71:32:65:54:1C:28:A3:AE:9F:0F:F3:EE:B3:FC:00:1B:28:33:C2:40:8B:C9:8A:5A:7E:E1:8C:52:61:2C:F5:E"]
       }
     }]
