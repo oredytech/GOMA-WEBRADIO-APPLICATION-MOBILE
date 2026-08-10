@@ -2,7 +2,7 @@
       "relation": ["delegate_permission/common.handle_all_urls"],
       "target": {
         "namespace": "android_app",
-        "package_name": "app.vercel.goma_webradio_application_mobile.twa",
-        "sha256_cert_fingerprints": ["71:32:65:54:1C:28:A3:AE:9F:0F:F3:EE:B3:FC:00:1B:28:33:C2:40:8B:C9:8A:5A:7E:E1:8C:52:61:2C:F5:3E"]
+        "package_name": "app.vercel.goma_webradio_application_mobile_l6.twa",
+        "sha256_cert_fingerprints": ["E6:2A:80:FE:9C:ED:75:7E:A7:33:D4:C5:61:AB:90:4A:6D:E0:8D:39:2A:20:9B:F6:81:A5:93:6C:5E:57:62:83"]
       }
     }]
