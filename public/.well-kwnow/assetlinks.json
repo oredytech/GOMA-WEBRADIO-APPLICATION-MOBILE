@@ -1,10 +1,1 @@
-[
-      {
-      "relation": ["delegate_permission/common.handle_all_urls"],
-      "target": {
-        "namespace": "android_app",
-        "package_name": "app.vercel.goma_webradio_application_mobile_l6.twa",
-        "sha256_cert_fingerprints": ["E6:2A:80:FE:9C:ED:75:7E:A7:33:D4:C5:61:AB:90:4A:6D:E0:8D:39:2A:20:9B:F6:81:A5:93:6C:5E:57:62:83"]
-      }
-    }
-]
+
