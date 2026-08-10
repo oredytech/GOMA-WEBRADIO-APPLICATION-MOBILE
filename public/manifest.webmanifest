@@ -10,7 +10,7 @@
   "display": "standalone",
   "display_override": ["standalone", "minimal-ui", "browser"],
   "orientation": "portrait-primary",
-  "theme_color": "transparent",
+  "theme_color": "#fff",
   "background_color": "#011b40",
   "categories": ["news", "music", "entertainment", "education"],
   "prefer_related_applications": false,
