@@ -33,19 +33,31 @@ function Notifications() {
     unreadCount,
     enablePush,
     pushStatus,
+    pushEnabled,
+    disablePush,
   } = useNotifications();
+
+  const togglePush = () => {
+    if (pushEnabled) {
+      if (window.confirm("Voulez-vous vraiment désactiver les notifications ?")) void disablePush();
+      return;
+    }
+    void enablePush();
+  };
 
   return (
     <Screen title="Notifications" back>
       <div className="flex flex-wrap items-center gap-2 pt-4">
         <button
-          onClick={() => void enablePush()}
+          onClick={togglePush}
           className="inline-flex items-center gap-2 rounded-full bg-brand px-4 py-2 text-xs font-bold text-white active:scale-95"
         >
           <span className="material-symbols-outlined" style={{ fontSize: 18 }}>
             notifications_active
           </span>
-          {pushStatus === "granted" ? "Alertes activées" : "Activer les alertes"}
+          {pushEnabled && pushStatus === "granted"
+            ? "Désactiver les alertes"
+            : "Activer les alertes"}
         </button>
         <button
           onClick={markAllRead}

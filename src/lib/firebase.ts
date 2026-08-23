@@ -1,6 +1,6 @@
 import { getApp, getApps, initializeApp } from "firebase/app";
 import { getAuth, signInAnonymously } from "firebase/auth";
-import { getDatabase, ref, set } from "firebase/database";
+import { getDatabase, ref, remove, set } from "firebase/database";
 import { getMessaging, getToken, isSupported, type Messaging } from "firebase/messaging";
 
 const firebaseConfig = {
@@ -20,6 +20,9 @@ export const firebaseApp = getApps().length ? getApp() : initializeApp(firebaseC
 
 export const firebaseVapidKey =
   "BHCkUyKnPiEEQbpi5PSIhGVZmlfwgVjphZ6amH3tQjS9nrS_jJ8rupnwZNiICv5I36dg5PhHKrsDeCoozHj6N_4";
+
+export const PUSH_ENABLED_KEY = "gw-push-enabled";
+export const PUSH_SETTING_EVENT = "gw-push-setting";
 
 const firebaseAuth = getAuth(firebaseApp);
 const firebaseDatabase = getDatabase(firebaseApp);
@@ -52,6 +55,14 @@ export async function saveFcmToken(token: string): Promise<void> {
   });
 }
 
+export async function disableFirebasePush(): Promise<void> {
+  const user = firebaseAuth.currentUser ?? (await signInAnonymously(firebaseAuth)).user;
+  if (user) await remove(ref(firebaseDatabase, `fcmTokens/${user.uid}`));
+  window.localStorage.removeItem("gw-fcm-token");
+  window.localStorage.setItem(PUSH_ENABLED_KEY, "0");
+  window.dispatchEvent(new Event(PUSH_SETTING_EVENT));
+}
+
 export async function enableFirebasePush(): Promise<NotificationPermission | "unsupported"> {
   if (typeof Notification === "undefined") return "unsupported";
   const permission = await Notification.requestPermission();
@@ -60,5 +71,7 @@ export async function enableFirebasePush(): Promise<NotificationPermission | "un
   if (!token) return "unsupported";
   await saveFcmToken(token);
   window.localStorage.setItem("gw-fcm-token", token);
+  window.localStorage.setItem(PUSH_ENABLED_KEY, "1");
+  window.dispatchEvent(new Event(PUSH_SETTING_EVENT));
   return permission;
 }

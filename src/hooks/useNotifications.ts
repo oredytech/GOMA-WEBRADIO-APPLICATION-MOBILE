@@ -1,7 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { articlesQuery, podcastQuery, videosQuery } from "@/lib/queries";
-import { enableFirebasePush, getBrowserMessaging } from "@/lib/firebase";
+import {
+  disableFirebasePush,
+  enableFirebasePush,
+  getBrowserMessaging,
+  PUSH_ENABLED_KEY,
+  PUSH_SETTING_EVENT,
+} from "@/lib/firebase";
 import { onMessage } from "firebase/messaging";
 
 export type NotificationItem = {
@@ -26,6 +32,13 @@ function readSeen(): number {
   return raw ? Number(raw) || 0 : 0;
 }
 
+function readPushEnabled(): boolean {
+  if (typeof window === "undefined" || typeof Notification === "undefined") return false;
+  return (
+    Notification.permission === "granted" && window.localStorage.getItem(PUSH_ENABLED_KEY) !== "0"
+  );
+}
+
 export function useNotifications() {
   const articlesQ = useQuery(articlesQuery({ perPage: 10 }));
   const podcastQ = useQuery(podcastQuery());
@@ -36,6 +49,7 @@ export function useNotifications() {
     "default",
   );
   const [fcmEnabled, setFcmEnabled] = useState(false);
+  const [pushEnabled, setPushEnabled] = useState(false);
 
   useEffect(() => {
     const sync = () => setSeen(readSeen());
@@ -43,9 +57,15 @@ export function useNotifications() {
     setHydrated(true);
     window.addEventListener(EVT, sync);
     window.addEventListener("storage", sync);
+    const syncPush = () => setPushEnabled(readPushEnabled());
+    syncPush();
+    window.addEventListener(PUSH_SETTING_EVENT, syncPush);
+    window.addEventListener("storage", syncPush);
     return () => {
       window.removeEventListener(EVT, sync);
       window.removeEventListener("storage", sync);
+      window.removeEventListener(PUSH_SETTING_EVENT, syncPush);
+      window.removeEventListener("storage", syncPush);
     };
   }, []);
 
@@ -137,7 +157,7 @@ export function useNotifications() {
   // Notification système (si l'utilisateur a donné son accord)
   useEffect(() => {
     if (!hydrated || typeof window === "undefined") return;
-    if (typeof Notification === "undefined" || Notification.permission !== "granted") return;
+    if (!pushEnabled) return;
     let pushed: string[] = [];
     try {
       pushed = JSON.parse(window.localStorage.getItem(PUSHED_KEY) ?? "[]") as string[];
@@ -157,7 +177,7 @@ export function useNotifications() {
       PUSHED_KEY,
       JSON.stringify([...fresh.map((n) => n.id), ...pushed].slice(0, 60)),
     );
-  }, [unread, hydrated]);
+  }, [unread, hydrated, pushEnabled]);
 
   const markAllRead = useCallback(() => {
     const now = Date.now();
@@ -170,11 +190,20 @@ export function useNotifications() {
     try {
       const status = await enableFirebasePush();
       setPushStatus(status);
-      if (status === "granted") setFcmEnabled(true);
+      if (status === "granted") {
+        setFcmEnabled(true);
+        setPushEnabled(true);
+      }
       return status;
     } catch {
       return "unsupported" as const;
     }
+  }, []);
+
+  const disablePush = useCallback(async () => {
+    await disableFirebasePush();
+    setPushEnabled(false);
+    setFcmEnabled(false);
   }, []);
 
   return {
@@ -192,6 +221,8 @@ export function useNotifications() {
     markAllRead,
     enablePush,
     pushStatus,
+    pushEnabled,
+    disablePush,
     isUnread: (n: NotificationItem) => new Date(n.date).getTime() > seen,
   };
 }
