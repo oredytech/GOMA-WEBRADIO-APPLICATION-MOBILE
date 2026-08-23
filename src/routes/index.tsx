@@ -215,6 +215,7 @@ function Home() {
         </AsyncSection>
         <Link
           to="/articles"
+          search={{ page: 1 }}
           className="mt-4 flex items-center justify-center rounded-full border border-line bg-panel py-3 text-sm font-bold text-ink active:scale-95"
         >
           Voir toutes les actualités
