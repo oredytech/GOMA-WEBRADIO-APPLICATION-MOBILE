@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { articlesQuery, podcastQuery, videosQuery } from "@/lib/queries";
+import { getBrowserMessaging, requestFirebaseToken, saveFcmToken } from "@/lib/firebase";
+import { onMessage } from "firebase/messaging";
 
 export type NotificationItem = {
   id: string;
@@ -15,6 +17,7 @@ export type NotificationItem = {
 
 const SEEN_KEY = "gw-notif-seen";
 const PUSHED_KEY = "gw-notif-pushed";
+const FCM_TOKEN_KEY = "gw-fcm-token";
 const EVT = "gw-notif";
 
 function readSeen(): number {
@@ -29,6 +32,10 @@ export function useNotifications() {
   const videosQ = useQuery(videosQuery());
   const [seen, setSeen] = useState(0);
   const [hydrated, setHydrated] = useState(false);
+  const [pushStatus, setPushStatus] = useState<NotificationPermission | "unsupported" | "default">(
+    "default",
+  );
+  const [fcmEnabled, setFcmEnabled] = useState(false);
 
   useEffect(() => {
     const sync = () => setSeen(readSeen());
@@ -41,6 +48,30 @@ export function useNotifications() {
       window.removeEventListener("storage", sync);
     };
   }, []);
+
+  useEffect(() => {
+    if (!hydrated || typeof window === "undefined") return;
+    if (typeof Notification === "undefined") {
+      setPushStatus("unsupported");
+      return;
+    }
+    setPushStatus(Notification.permission);
+    const token = window.localStorage.getItem(FCM_TOKEN_KEY);
+    if (!token || Notification.permission !== "granted") return;
+
+    let unsubscribe: (() => void) | undefined;
+    void getBrowserMessaging().then((messaging) => {
+      if (!messaging) return;
+      unsubscribe = onMessage(messaging, (payload) => {
+        const title = payload.notification?.title ?? "GOMA WEBRADIO";
+        const body = payload.notification?.body ?? "Une nouvelle information est disponible.";
+        if (Notification.permission === "granted") {
+          new Notification(title, { body, icon: "/icon-192.png", tag: payload.messageId });
+        }
+      });
+    });
+    return () => unsubscribe?.();
+  }, [hydrated, fcmEnabled]);
 
   const items = useMemo<NotificationItem[]>(() => {
     const articles: NotificationItem[] = (articlesQ.data ?? []).slice(0, 12).map((a) => ({
@@ -91,13 +122,17 @@ export function useNotifications() {
     let pushed: string[] = [];
     try {
       pushed = JSON.parse(window.localStorage.getItem(PUSHED_KEY) ?? "[]") as string[];
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
     const fresh = unread.filter((n) => !pushed.includes(n.id)).slice(0, 3);
     if (!fresh.length) return;
     for (const n of fresh) {
       try {
         new Notification(n.title, { body: n.desc, icon: "/icon-192.png", tag: n.id });
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     }
     window.localStorage.setItem(
       PUSHED_KEY,
@@ -115,7 +150,18 @@ export function useNotifications() {
   const enablePush = useCallback(async () => {
     if (typeof Notification === "undefined") return "unsupported" as const;
     const res = await Notification.requestPermission();
-    return res;
+    setPushStatus(res);
+    if (res !== "granted") return res;
+    try {
+      const token = await requestFirebaseToken();
+      if (!token) return "unsupported" as const;
+      await saveFcmToken(token);
+      window.localStorage.setItem(FCM_TOKEN_KEY, token);
+      setFcmEnabled(true);
+      return res;
+    } catch {
+      return "unsupported" as const;
+    }
   }, []);
 
   return {
@@ -132,6 +178,7 @@ export function useNotifications() {
     },
     markAllRead,
     enablePush,
+    pushStatus,
     isUnread: (n: NotificationItem) => new Date(n.date).getTime() > seen,
   };
 }
