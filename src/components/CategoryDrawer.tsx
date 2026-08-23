@@ -63,6 +63,7 @@ export function CategoryDrawer({
         <nav className="flex-1 overflow-y-auto p-3">
           <Link
             to="/articles"
+            search={{ page: 1 }}
             onClick={onClose}
             className={
               "mb-2 flex items-center gap-3 rounded-2xl border border-line px-3 py-3 text-sm font-bold active:scale-[0.99] " +
@@ -96,6 +97,7 @@ export function CategoryDrawer({
                 key={c.id}
                 to="/categories/$slug"
                 params={{ slug: c.slug }}
+                search={{ page: 1 }}
                 onClick={onClose}
                 className={
                   "flex items-center justify-between gap-2 rounded-2xl px-3 py-3 text-sm font-semibold active:scale-[0.99] " +
