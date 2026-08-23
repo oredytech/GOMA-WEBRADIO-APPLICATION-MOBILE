@@ -91,7 +91,7 @@ for (const post of newPosts) {
     data: { url: articleUrl, image: image ?? "" },
     webpush: {
       fcmOptions: { link: articleUrl },
-      notification: { image },
+      notification: { icon: `${appUrl}/logo.png`, badge: `${appUrl}/logo.png`, image },
     },
   };
   const result = await messaging.sendEachForMulticast(message);

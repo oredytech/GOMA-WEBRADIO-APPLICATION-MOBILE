@@ -17,8 +17,8 @@ messaging.onBackgroundMessage((payload) => {
   const title = payload.notification?.title || "GOMA WEBRADIO";
   const options = {
     body: payload.notification?.body || "Une nouvelle information est disponible.",
-    icon: "/icon-192.png",
-    badge: "/icon-192.png",
+    icon: "/logo.png",
+    badge: "/logo.png",
     image: payload.notification?.image || payload.data?.image || undefined,
     tag: payload.messageId || "goma-webradio",
     data: { url: payload.fcmOptions?.link || payload.data?.url || "/notifications" },
@@ -28,7 +28,8 @@ messaging.onBackgroundMessage((payload) => {
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const targetUrl = new URL(event.notification.data?.url || "/notifications", self.location.origin).href;
+  const targetUrl = new URL(event.notification.data?.url || "/notifications", self.location.origin)
+    .href;
   event.waitUntil(
     clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
       for (const client of clientList) {
