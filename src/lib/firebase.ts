@@ -13,7 +13,7 @@ const firebaseConfig = {
   measurementId: "G-F4QS3XEQ71",
   databaseURL:
     import.meta.env.VITE_FIREBASE_DATABASE_URL ??
-    "https://app-goma-webradio-default-rtdb.firebaseio.com",
+    "https://app-goma-webradio-default-rtdb.europe-west1.firebasedatabase.app",
 };
 
 export const firebaseApp = getApps().length ? getApp() : initializeApp(firebaseConfig);
