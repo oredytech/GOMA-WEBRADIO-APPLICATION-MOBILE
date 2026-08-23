@@ -15,7 +15,10 @@ const app = getApps().length
 const database = getDatabase(app);
 const messaging = getMessaging(app);
 const postsUrl =
-  "https://gomawebradio.com/wp-json/wp/v2/posts?per_page=20&orderby=date&order=desc&_fields=id,date,slug,title,link";
+  "https://gomawebradio.com/wp-json/wp/v2/posts?per_page=20&orderby=date&order=desc&_embed=1&_fields=id,date,slug,title,link,_embedded";
+const appUrl = process.env.APP_URL?.replace(/\/$/, "");
+
+if (!appUrl) throw new Error("APP_URL secret is required");
 
 function cleanTitle(value) {
   return value
@@ -80,12 +83,15 @@ if (!tokens.length) {
 
 for (const post of newPosts) {
   const title = cleanTitle(post.title.rendered);
+  const image = post._embedded?.["wp:featuredmedia"]?.[0]?.source_url;
+  const articleUrl = `${appUrl}/articles/${post.slug}`;
   const message = {
     tokens,
-    notification: { title: "Nouvel article", body: title },
-    data: { url: post.link ?? `/articles/${post.slug}` },
+    notification: { title: "Nouvel article", body: title, imageUrl: image },
+    data: { url: articleUrl, image: image ?? "" },
     webpush: {
-      fcmOptions: { link: post.link ?? `/articles/${post.slug}` },
+      fcmOptions: { link: articleUrl },
+      notification: { image },
     },
   };
   const result = await messaging.sendEachForMulticast(message);

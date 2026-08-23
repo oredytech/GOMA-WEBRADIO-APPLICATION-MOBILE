@@ -12,6 +12,7 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { PlayerProvider } from "../context/player";
+import { PushPrompt } from "../components/PushPrompt";
 
 const themeBootScript = `
 try {
@@ -20,7 +21,6 @@ try {
   }
 } catch (e) {}
 `;
-
 
 function NotFoundComponent() {
   return (
@@ -54,12 +54,18 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
         <p className="mt-2 text-sm text-inkmute">Une erreur est survenue. Réessayez.</p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
-            onClick={() => { router.invalidate(); reset(); }}
+            onClick={() => {
+              router.invalidate();
+              reset();
+            }}
             className="rounded-full bg-brand px-5 py-2.5 text-sm font-semibold text-white"
           >
             Réessayer
           </button>
-          <a href="/" className="rounded-full border border-line px-5 py-2.5 text-sm font-semibold text-ink">
+          <a
+            href="/"
+            className="rounded-full border border-line px-5 py-2.5 text-sm font-semibold text-ink"
+          >
             Accueil
           </a>
         </div>
@@ -108,7 +114,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
     ],
     scripts: [{ children: themeBootScript }],
-
   }),
   shellComponent: RootShell,
   component: RootComponent,
@@ -137,6 +142,7 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <PlayerProvider>
         <Outlet />
+        <PushPrompt />
       </PlayerProvider>
     </QueryClientProvider>
   );

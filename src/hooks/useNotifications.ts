@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { articlesQuery, podcastQuery, videosQuery } from "@/lib/queries";
-import { getBrowserMessaging, requestFirebaseToken, saveFcmToken } from "@/lib/firebase";
+import { enableFirebasePush, getBrowserMessaging } from "@/lib/firebase";
 import { onMessage } from "firebase/messaging";
 
 export type NotificationItem = {
@@ -65,9 +65,28 @@ export function useNotifications() {
       unsubscribe = onMessage(messaging, (payload) => {
         const title = payload.notification?.title ?? "GOMA WEBRADIO";
         const body = payload.notification?.body ?? "Une nouvelle information est disponible.";
-        if (Notification.permission === "granted") {
-          new Notification(title, { body, icon: "/icon-192.png", tag: payload.messageId });
-        }
+        if (Notification.permission !== "granted") return;
+        void navigator.serviceWorker
+          .getRegistration("/firebase-messaging-sw.js")
+          .then((registration) => {
+            if (registration) {
+              void registration.showNotification(title, {
+                body,
+                icon: "/icon-192.png",
+                tag: payload.messageId,
+                data: { url: payload.data?.url ?? "/notifications" },
+              });
+              return;
+            }
+            const notification = new Notification(title, {
+              body,
+              icon: "/icon-192.png",
+              tag: payload.messageId,
+            });
+            notification.onclick = () => {
+              window.location.assign(payload.data?.url ?? "/notifications");
+            };
+          });
       });
     });
     return () => unsubscribe?.();
@@ -148,17 +167,11 @@ export function useNotifications() {
   }, []);
 
   const enablePush = useCallback(async () => {
-    if (typeof Notification === "undefined") return "unsupported" as const;
-    const res = await Notification.requestPermission();
-    setPushStatus(res);
-    if (res !== "granted") return res;
     try {
-      const token = await requestFirebaseToken();
-      if (!token) return "unsupported" as const;
-      await saveFcmToken(token);
-      window.localStorage.setItem(FCM_TOKEN_KEY, token);
-      setFcmEnabled(true);
-      return res;
+      const status = await enableFirebasePush();
+      setPushStatus(status);
+      if (status === "granted") setFcmEnabled(true);
+      return status;
     } catch {
       return "unsupported" as const;
     }

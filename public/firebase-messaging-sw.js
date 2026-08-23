@@ -19,6 +19,7 @@ messaging.onBackgroundMessage((payload) => {
     body: payload.notification?.body || "Une nouvelle information est disponible.",
     icon: "/icon-192.png",
     badge: "/icon-192.png",
+    image: payload.notification?.image || payload.data?.image || undefined,
     tag: payload.messageId || "goma-webradio",
     data: { url: payload.fcmOptions?.link || payload.data?.url || "/notifications" },
   };
