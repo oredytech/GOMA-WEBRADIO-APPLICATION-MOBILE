@@ -51,3 +51,14 @@ export async function saveFcmToken(token: string): Promise<void> {
     updatedAt: now,
   });
 }
+
+export async function enableFirebasePush(): Promise<NotificationPermission | "unsupported"> {
+  if (typeof Notification === "undefined") return "unsupported";
+  const permission = await Notification.requestPermission();
+  if (permission !== "granted") return permission;
+  const token = await requestFirebaseToken();
+  if (!token) return "unsupported";
+  await saveFcmToken(token);
+  window.localStorage.setItem("gw-fcm-token", token);
+  return permission;
+}
