@@ -35,12 +35,64 @@ function formatViews(v: number | null) {
 
 function Videos() {
   const videosQ = useQuery(videosQuery());
-  const [current, setCurrent] = useState<Video | null>(null);
+  const [currentId, setCurrentId] = useState<string | null>(null);
   const videos = videosQ.data ?? [];
+  const current = videos.find((v) => v.id === currentId) ?? null;
+  const others = current ? videos.filter((v) => v.id !== current.id) : videos;
+
+  const play = (v: Video) => {
+    setCurrentId(v.id);
+    if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   return (
     <Screen title="Vidéos">
-      <section className="mt-4 space-y-4">
+      {current && (
+        <section className="-mx-4 mb-4 bg-ink/95 pb-4 pt-3">
+          <div className="px-4">
+            <div className="aspect-video w-full overflow-hidden rounded-2xl bg-black shadow-lift">
+              <iframe
+                key={current.id}
+                title={current.title}
+                src={`https://www.youtube-nocookie.com/embed/${current.id}?autoplay=1&playsinline=1&rel=0`}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+                className="h-full w-full border-0"
+              />
+            </div>
+            <div className="mt-3 flex items-start gap-2">
+              <div className="min-w-0 flex-1">
+                <h2 className="line-clamp-2 font-display text-sm font-extrabold leading-snug text-white">
+                  {current.title}
+                </h2>
+                <p className="mt-1 text-xs text-white/60">
+                  <TimeAgo date={current.date} />
+                  {formatViews(current.views) ? ` · ${formatViews(current.views)}` : ""}
+                </p>
+              </div>
+              <button
+                aria-label="Partager la vidéo"
+                onClick={() => void shareContent({ title: current.title, url: current.url })}
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/15 text-white active:scale-95"
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: 20 }}>share</span>
+              </button>
+              <button
+                aria-label="Fermer la vidéo"
+                onClick={() => setCurrentId(null)}
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/15 text-white active:scale-95"
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: 20 }}>close</span>
+              </button>
+            </div>
+          </div>
+        </section>
+      )}
+
+      <section className={current ? "space-y-4" : "mt-4 space-y-4"}>
+        {current && (
+          <h3 className="font-display text-sm font-extrabold text-ink">Autres vidéos</h3>
+        )}
         <AsyncSection
           isPending={videosQ.isPending}
           isError={videosQ.isError}
@@ -49,13 +101,13 @@ function Videos() {
           errorMessage="Impossible de charger les vidéos."
           skeleton={<CardListSkeleton rows={4} />}
         >
-          {videos.map((v, i) => (
+          {others.map((v, i) => (
             <article
               key={v.id}
               className="overflow-hidden rounded-2xl border border-line bg-panel shadow-soft"
             >
               <button
-                onClick={() => setCurrent(v)}
+                onClick={() => play(v)}
                 aria-label={`Regarder ${v.title}`}
                 className="relative block w-full active:scale-[0.99]"
               >
@@ -74,7 +126,7 @@ function Videos() {
                     </span>
                   </span>
                 </span>
-                {i === 0 && (
+                {!current && i === 0 && (
                   <span className="absolute left-3 top-3 rounded-full bg-blood px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-white">
                     Nouveau
                   </span>
@@ -88,7 +140,7 @@ function Videos() {
                 </p>
                 <div className="mt-2 flex items-center gap-2">
                   <button
-                    onClick={() => setCurrent(v)}
+                    onClick={() => play(v)}
                     className="inline-flex items-center gap-1.5 rounded-full bg-blood px-3 py-1.5 text-xs font-bold text-white active:scale-95"
                   >
                     <span className="material-symbols-outlined" style={{ fontSize: 18, fontVariationSettings: "'FILL' 1" }}>
@@ -110,37 +162,7 @@ function Videos() {
           {videos.length === 0 && <p className="text-sm text-inkmute">Aucune vidéo disponible.</p>}
         </AsyncSection>
       </section>
-
-      {current && <VideoPlayer video={current} onClose={() => setCurrent(null)} />}
     </Screen>
   );
 }
 
-function VideoPlayer({ video, onClose }: { video: Video; onClose: () => void }) {
-  return (
-    <div className="fixed inset-0 z-[60] flex flex-col bg-black/90 backdrop-blur-sm">
-      <div className="flex items-center justify-between gap-2 px-4 py-3">
-        <p className="line-clamp-1 flex-1 text-sm font-bold text-white">{video.title}</p>
-        <button
-          aria-label="Fermer la vidéo"
-          onClick={onClose}
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/15 text-white active:scale-95"
-        >
-          <span className="material-symbols-outlined">close</span>
-        </button>
-      </div>
-      <div className="flex flex-1 items-center justify-center px-3 pb-8">
-        <div className="aspect-video w-full max-w-3xl overflow-hidden rounded-2xl bg-black shadow-lift">
-          <iframe
-            key={video.id}
-            title={video.title}
-            src={`https://www.youtube-nocookie.com/embed/${video.id}?autoplay=1&playsinline=1&rel=0`}
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-            allowFullScreen
-            className="h-full w-full border-0"
-          />
-        </div>
-      </div>
-    </div>
-  );
-}
