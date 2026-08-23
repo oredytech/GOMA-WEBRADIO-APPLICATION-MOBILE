@@ -1,8 +1,8 @@
 name: Notify new articles
 
 on:
-  schedule:
-    - cron: "*/10 * * * *"
+  repository_dispatch:
+    types: [article_published]
   workflow_dispatch:
 
 permissions: {}
@@ -22,3 +22,4 @@ jobs:
           FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
           APP_URL: ${{ secrets.APP_URL }}
           FIREBASE_DATABASE_URL: https://app-goma-webradio-default-rtdb.europe-west1.firebasedatabase.app
+          ARTICLE_ID: ${{ github.event.client_payload.article_id }}

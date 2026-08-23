@@ -92,7 +92,7 @@ export function useNotifications() {
             if (registration) {
               void registration.showNotification(title, {
                 body,
-                icon: "/logo.png",
+                icon: "/icon-192.png",
                 tag: payload.messageId,
                 data: { url: payload.data?.url ?? "/notifications" },
               });
@@ -100,7 +100,7 @@ export function useNotifications() {
             }
             const notification = new Notification(title, {
               body,
-              icon: "/logo.png",
+              icon: "/icon-192.png",
               tag: payload.messageId,
             });
             notification.onclick = () => {
@@ -168,7 +168,7 @@ export function useNotifications() {
     if (!fresh.length) return;
     for (const n of fresh) {
       try {
-        new Notification(n.title, { body: n.desc, icon: "/logo.png", tag: n.id });
+        new Notification(n.title, { body: n.desc, icon: "/icon-192.png", tag: n.id });
       } catch {
         /* ignore */
       }

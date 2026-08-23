@@ -14,9 +14,14 @@ const app = getApps().length
 
 const database = getDatabase(app);
 const messaging = getMessaging(app);
-const postsUrl =
-  "https://gomawebradio.com/wp-json/wp/v2/posts?per_page=20&orderby=date&order=desc&_embed=1&_fields=id,date,slug,title,link,_embedded";
+const postsEndpoint = "https://gomawebradio.com/wp-json/wp/v2/posts";
 const appUrl = process.env.APP_URL?.replace(/\/$/, "");
+const requestedArticleId = process.env.ARTICLE_ID?.trim();
+const invalidTokenCodes = new Set([
+  "messaging/invalid-registration-token",
+  "messaging/registration-token-not-registered",
+]);
+const retryDelayMs = 5 * 60 * 1000;
 
 if (!appUrl) throw new Error("APP_URL secret is required");
 
@@ -33,18 +38,24 @@ function cleanTitle(value) {
 }
 
 async function fetchPosts() {
+  const postsUrl = requestedArticleId
+    ? `${postsEndpoint}/${encodeURIComponent(requestedArticleId)}?_embed=1`
+    : `${postsEndpoint}?per_page=20&orderby=date&order=desc&_embed=1`;
   const response = await fetch(postsUrl, { headers: { accept: "application/json" } });
   if (!response.ok) throw new Error(`WordPress request failed [${response.status}]`);
-  return response.json();
+  const payload = await response.json();
+  return Array.isArray(payload) ? payload : [payload];
 }
 
 async function getTokens() {
   const snapshot = await database.ref("fcmTokens").once("value");
   const tokens = [];
-  for (const value of Object.values(snapshot.val() ?? {})) {
-    if (typeof value?.token === "string" && value.token.length > 0) tokens.push(value.token);
+  for (const [key, value] of Object.entries(snapshot.val() ?? {})) {
+    if (typeof value?.token === "string" && value.token.length > 0) {
+      tokens.push({ key, token: value.token });
+    }
   }
-  return [...new Set(tokens)];
+  return [...new Map(tokens.map((entry) => [entry.token, entry])).values()];
 }
 
 const posts = (await fetchPosts())
@@ -59,17 +70,14 @@ if (!latestPost) {
   process.exit(0);
 }
 
-if (!state?.lastDate) {
+if (!state?.lastId && !requestedArticleId) {
   await stateRef.set({ lastId: latestPost.id, lastDate: latestPost.date });
   console.log(`Initialized at article ${latestPost.id}; no notification sent.`);
   process.exit(0);
 }
 
-const newPosts = posts.filter(
-  (post) =>
-    new Date(post.date).getTime() > new Date(state.lastDate).getTime() ||
-    (post.date === state.lastDate && post.id !== state.lastId),
-);
+const lastId = state?.lastId ? Number(state.lastId) : Number(latestPost.id) - 1;
+const newPosts = posts.filter((post) => Number(post.id) > lastId).sort((a, b) => a.id - b.id);
 if (!newPosts.length) {
   console.log("No new articles.");
   process.exit(0);
@@ -77,25 +85,73 @@ if (!newPosts.length) {
 
 const tokens = await getTokens();
 if (!tokens.length) {
-  console.log("No FCM tokens registered; state was not advanced.");
+  const lastPost = newPosts.at(-1);
+  await stateRef.set({ lastId: lastPost.id, lastDate: lastPost.date });
+  console.log("No FCM tokens registered; state advanced without sending.");
   process.exit(0);
 }
 
 for (const post of newPosts) {
   const title = cleanTitle(post.title.rendered);
-  const image = post._embedded?.["wp:featuredmedia"]?.[0]?.source_url;
+  const image =
+    post._embedded?.["wp:featuredmedia"]?.[0]?.source_url ??
+    post._embedded?.["wp:featuredmedia"]?.[0]?.media_details?.sizes?.full?.source_url;
   const articleUrl = `${appUrl}/articles/${post.slug}`;
   const message = {
-    tokens,
-    notification: { title: "Nouvel article", body: title, imageUrl: image },
+    tokens: tokens.map((entry) => entry.token),
+    notification: { title: "Nouvel article", body: title, ...(image ? { imageUrl: image } : {}) },
     data: { url: articleUrl, image: image ?? "" },
     webpush: {
       fcmOptions: { link: articleUrl },
-      notification: { icon: `${appUrl}/logo.png`, badge: `${appUrl}/logo.png`, image },
+      notification: {
+        icon: `${appUrl}/icon-192.png`,
+        badge: `${appUrl}/icon-192.png`,
+        ...(image ? { image } : {}),
+      },
     },
   };
   const result = await messaging.sendEachForMulticast(message);
   console.log(`Article ${post.id}: ${result.successCount} sent, ${result.failureCount} failed.`);
+
+  const invalidTokenKeys = result.responses
+    .map((response, index) =>
+      !response.success && invalidTokenCodes.has(response.error?.code) ? tokens[index].key : null,
+    )
+    .filter(Boolean);
+  await Promise.all(invalidTokenKeys.map((key) => database.ref(`fcmTokens/${key}`).remove()));
+
+  const retryTokens = tokens.filter(
+    (entry, index) =>
+      !result.responses[index].success &&
+      !invalidTokenCodes.has(result.responses[index].error?.code),
+  );
+  if (retryTokens.length) {
+    console.log(
+      `Retrying ${retryTokens.length} failed notification(s) for article ${post.id} in 5 minutes.`,
+    );
+    await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
+    const retryResult = await messaging.sendEachForMulticast({
+      ...message,
+      tokens: retryTokens.map((entry) => entry.token),
+    });
+    console.log(
+      `Article ${post.id} retry: ${retryResult.successCount} sent, ${retryResult.failureCount} failed.`,
+    );
+
+    const retryInvalidTokenKeys = retryResult.responses
+      .map((response, index) =>
+        !response.success && invalidTokenCodes.has(response.error?.code)
+          ? retryTokens[index].key
+          : null,
+      )
+      .filter(Boolean);
+    await Promise.all(
+      retryInvalidTokenKeys.map((key) => database.ref(`fcmTokens/${key}`).remove()),
+    );
+    if (retryResult.failureCount > retryInvalidTokenKeys.length) {
+      throw new Error(`Notification retry failed for article ${post.id}.`);
+    }
+  }
 }
 
 const lastPost = newPosts.at(-1);
