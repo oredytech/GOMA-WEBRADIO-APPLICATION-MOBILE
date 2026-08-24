@@ -60,7 +60,7 @@ function goma_ghd_headers() {
 }
 
 function goma_ghd_oauth_redirect_uri() {
-    return admin_url('options-general.php?page=goma-github-dispatch&goma_ghd_oauth=callback');
+    return admin_url('options-general.php?page=goma-github-dispatch');
 }
 
 function goma_ghd_github_request($url, $args = array()) {
@@ -122,8 +122,10 @@ function goma_ghd_start_oauth() {
 add_action('admin_post_goma_ghd_oauth_start', 'goma_ghd_start_oauth');
 
 function goma_ghd_handle_oauth_callback() {
-    if (!is_admin() || !current_user_can('manage_options') || empty($_GET['goma_ghd_oauth'])) return;
-    if ('callback' !== $_GET['goma_ghd_oauth']) return;
+    if (!is_admin() || !current_user_can('manage_options')) return;
+    $is_callback = 'callback' === ($_GET['goma_ghd_oauth'] ?? '') ||
+        ('goma-github-dispatch' === ($_GET['page'] ?? '') && !empty($_GET['code']) && !empty($_GET['state']));
+    if (!$is_callback) return;
     $state = sanitize_text_field(wp_unslash($_GET['state'] ?? ''));
     $saved_state = get_transient('goma_ghd_oauth_' . get_current_user_id());
     delete_transient('goma_ghd_oauth_' . get_current_user_id());
