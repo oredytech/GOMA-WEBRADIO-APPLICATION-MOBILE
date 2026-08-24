@@ -8,18 +8,23 @@ Plugin WordPress autonome pour déclencher un événement `repository_dispatch` 
 2. Compresse-le en `goma-github-dispatch.zip` ou copie-le dans `wp-content/plugins/`.
 3. Dans WordPress, ouvre **Extensions** et active **GOMA - GitHub Article Notifications**.
 4. Va dans **Réglages > Notifications GitHub**.
-5. Renseigne le propriétaire GitHub, le nom du dépôt et le token.
-6. Enregistre puis utilise **Tester la connexion GitHub**.
+5. Crée une GitHub OAuth App dans **Settings > Developer settings > OAuth Apps > New OAuth App**.
+6. Utilise comme callback l'URL affichée par le plugin, puis renseigne le Client ID et le Client Secret.
+7. Enregistre et clique sur **Se connecter à GitHub / créer le token**.
+8. Autorise l’application avec le compte qui possède le dépôt, puis choisis le dépôt cible dans la liste.
+9. Utilise **Tester la connexion GitHub**.
 
 ## Token GitHub
 
-Crée un token fine-grained limité au dépôt cible avec au minimum :
+Le bouton OAuth crée et enregistre un token OAuth côté WordPress. Pour les dépôts privés, l'autorisation OAuth utilise la portée `repo`.
+
+Alternative manuelle : crée un token fine-grained limité au dépôt cible avec au minimum :
 
 - Repository access : le dépôt cible uniquement
 - Repository permissions : `Contents: Read and write`
 - Metadata : `Read-only`
 
-Le token est stocké dans les options privées WordPress et n'est jamais envoyé au navigateur public.
+Les identifiants OAuth et le token sont stockés dans les options privées WordPress et ne sont jamais envoyés au navigateur public. La création d'un token GitHub personnel ne peut pas être automatisée directement par un plugin ; OAuth est le mécanisme prévu par GitHub.
 
 ## Contrat avec GitHub Actions
 

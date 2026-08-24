@@ -14,6 +14,7 @@ defined('ABSPATH') || exit;
 const GOMA_GHD_OPTION = 'goma_ghd_settings';
 const GOMA_GHD_LOG_OPTION = 'goma_ghd_log';
 const GOMA_GHD_NONCE = 'goma_ghd_save_settings';
+const GOMA_GHD_OAUTH_NONCE = 'goma_ghd_oauth';
 
 function goma_ghd_defaults() {
     return array(
@@ -21,6 +22,9 @@ function goma_ghd_defaults() {
         'owner' => '',
         'repository' => '',
         'token' => '',
+        'oauth_client_id' => '',
+        'oauth_client_secret' => '',
+        'github_user' => '',
         'event_type' => 'article_published',
         'post_types' => 'post',
     );
@@ -54,6 +58,107 @@ function goma_ghd_headers() {
         'Content-Type' => 'application/json',
     );
 }
+
+function goma_ghd_oauth_redirect_uri() {
+    return admin_url('options-general.php?page=goma-github-dispatch&goma_ghd_oauth=callback');
+}
+
+function goma_ghd_github_request($url, $args = array()) {
+    $settings = goma_ghd_settings();
+    $args = wp_parse_args($args, array('timeout' => 20, 'headers' => array()));
+    $args['headers'] = array_merge(array(
+        'Accept' => 'application/vnd.github+json',
+        'X-GitHub-Api-Version' => '2022-11-28',
+        'User-Agent' => 'GOMA-GitHub-Article-Notifications',
+    ), $args['headers']);
+    if (!empty($settings['token'])) {
+        $args['headers']['Authorization'] = 'Bearer ' . $settings['token'];
+    }
+    return wp_remote_request($url, $args);
+}
+
+function goma_ghd_repositories() {
+    $repositories = array();
+    for ($page = 1; $page <= 10; $page++) {
+        $response = goma_ghd_github_request('https://api.github.com/user/repos?per_page=100&sort=full_name&page=' . $page);
+        if (is_wp_error($response) || 200 !== wp_remote_retrieve_response_code($response)) {
+            return array();
+        }
+        $items = json_decode(wp_remote_retrieve_body($response), true);
+        if (!is_array($items)) return array();
+        foreach ($items as $repo) {
+            if (!empty($repo['owner']['login']) && !empty($repo['name'])) {
+                $repositories[] = array(
+                    'full_name' => $repo['full_name'],
+                    'owner' => $repo['owner']['login'],
+                    'name' => $repo['name'],
+                    'private' => !empty($repo['private']),
+                );
+            }
+        }
+        if (count($items) < 100) break;
+    }
+    return $repositories;
+}
+
+function goma_ghd_start_oauth() {
+    check_admin_referer(GOMA_GHD_OAUTH_NONCE);
+    $settings = goma_ghd_settings();
+    if (empty($settings['oauth_client_id'])) {
+        wp_safe_redirect(add_query_arg(array('goma_ghd_notice' => 'oauth_config'), admin_url('options-general.php?page=goma-github-dispatch')));
+        exit;
+    }
+    $state = wp_generate_password(32, false, false);
+    set_transient('goma_ghd_oauth_' . get_current_user_id(), $state, 10 * MINUTE_IN_SECONDS);
+    $url = add_query_arg(array(
+        'client_id' => $settings['oauth_client_id'],
+        'redirect_uri' => goma_ghd_oauth_redirect_uri(),
+        'scope' => 'repo',
+        'state' => $state,
+    ), 'https://github.com/login/oauth/authorize');
+    wp_safe_redirect($url);
+    exit;
+}
+
+function goma_ghd_handle_oauth_callback() {
+    if (!is_admin() || !current_user_can('manage_options') || empty($_GET['goma_ghd_oauth'])) return;
+    if ('start' === $_GET['goma_ghd_oauth']) goma_ghd_start_oauth();
+    if ('callback' !== $_GET['goma_ghd_oauth']) return;
+    $state = sanitize_text_field(wp_unslash($_GET['state'] ?? ''));
+    $saved_state = get_transient('goma_ghd_oauth_' . get_current_user_id());
+    delete_transient('goma_ghd_oauth_' . get_current_user_id());
+    if (!$state || !$saved_state || !hash_equals($saved_state, $state)) {
+        wp_die('La validation GitHub a échoué. Recommence la connexion.');
+    }
+    if (!empty($_GET['error'])) {
+        wp_safe_redirect(add_query_arg(array('goma_ghd_notice' => 'oauth_cancelled'), admin_url('options-general.php?page=goma-github-dispatch')));
+        exit;
+    }
+    $settings = goma_ghd_settings();
+    $response = wp_remote_post('https://github.com/login/oauth/access_token', array(
+        'timeout' => 20,
+        'headers' => array('Accept' => 'application/json'),
+        'body' => array(
+            'client_id' => $settings['oauth_client_id'],
+            'client_secret' => $settings['oauth_client_secret'],
+            'code' => sanitize_text_field(wp_unslash($_GET['code'] ?? '')),
+            'redirect_uri' => goma_ghd_oauth_redirect_uri(),
+        ),
+    ));
+    $data = json_decode(wp_remote_retrieve_body($response), true);
+    if (is_wp_error($response) || empty($data['access_token'])) {
+        wp_safe_redirect(add_query_arg(array('goma_ghd_notice' => 'oauth_error'), admin_url('options-general.php?page=goma-github-dispatch')));
+        exit;
+    }
+    $settings['token'] = sanitize_text_field($data['access_token']);
+    $user_response = goma_ghd_github_request('https://api.github.com/user', array('headers' => array('Authorization' => 'Bearer ' . $settings['token'])));
+    $user = json_decode(wp_remote_retrieve_body($user_response), true);
+    $settings['github_user'] = sanitize_text_field($user['login'] ?? '');
+    update_option(GOMA_GHD_OPTION, $settings, false);
+    wp_safe_redirect(add_query_arg(array('goma_ghd_notice' => 'oauth_success'), admin_url('options-general.php?page=goma-github-dispatch')));
+    exit;
+}
+add_action('admin_init', 'goma_ghd_handle_oauth_callback', 1);
 
 function goma_ghd_valid_settings($settings) {
     return !empty($settings['owner']) && !empty($settings['repository']) && !empty($settings['token']) && !empty($settings['event_type']);
@@ -156,6 +261,9 @@ function goma_ghd_sanitize_settings($input) {
         'owner' => sanitize_user($input['owner'] ?? '', true),
         'repository' => sanitize_text_field($input['repository'] ?? ''),
         'token' => $token !== '' ? sanitize_text_field($token) : $old['token'],
+        'oauth_client_id' => sanitize_text_field($input['oauth_client_id'] ?? $old['oauth_client_id']),
+        'oauth_client_secret' => !empty($input['oauth_client_secret']) ? sanitize_text_field($input['oauth_client_secret']) : $old['oauth_client_secret'],
+        'github_user' => sanitize_text_field($old['github_user']),
         'event_type' => sanitize_key($input['event_type'] ?? 'article_published'),
         'post_types' => sanitize_text_field($input['post_types'] ?? 'post'),
     );
@@ -206,19 +314,29 @@ function goma_ghd_settings_page() {
         return;
     }
     goma_ghd_handle_actions();
-    settings_errors('goma_ghd');
     $settings = goma_ghd_settings();
+    if ('oauth_success' === ($_GET['goma_ghd_notice'] ?? '')) add_settings_error('goma_ghd', 'oauth', 'Connexion GitHub réussie. Le token OAuth est enregistré.', 'updated');
+    if ('oauth_config' === ($_GET['goma_ghd_notice'] ?? '')) add_settings_error('goma_ghd', 'oauth', 'Renseigne d’abord le Client ID de ton application OAuth GitHub.', 'error');
+    if ('oauth_cancelled' === ($_GET['goma_ghd_notice'] ?? '')) add_settings_error('goma_ghd', 'oauth', 'Connexion GitHub annulée.', 'error');
+    if ('oauth_error' === ($_GET['goma_ghd_notice'] ?? '')) add_settings_error('goma_ghd', 'oauth', 'GitHub n’a pas pu fournir le token OAuth.', 'error');
+    $repositories = !empty($settings['token']) ? goma_ghd_repositories() : array();
     $log = (array) get_option(GOMA_GHD_LOG_OPTION, array());
     ?>
     <div class="wrap">
         <h1>Notifications GitHub</h1>
+        <?php settings_errors('goma_ghd'); ?>
         <p>Envoie un événement GitHub lorsqu’un contenu passe au statut « Publié ».</p>
+        <h2>Connexion GitHub</h2>
+        <p>Crée une <a href="https://github.com/settings/developers" target="_blank" rel="noopener noreferrer">GitHub OAuth App</a>, puis indique ses identifiants ci-dessous. L’URL de callback à enregistrer est :</p>
+        <code><?php echo esc_html(goma_ghd_oauth_redirect_uri()); ?></code>
         <form method="post" action="options.php">
             <?php settings_fields('goma_ghd_settings_group'); ?>
             <table class="form-table" role="presentation">
+                <tr><th scope="row"><label for="goma-ghd-client-id">Client ID OAuth GitHub</label></th><td><input id="goma-ghd-client-id" class="regular-text" type="text" name="<?php echo esc_attr(GOMA_GHD_OPTION); ?>[oauth_client_id]" value="<?php echo esc_attr($settings['oauth_client_id']); ?>" placeholder="Iv1.xxxxxxxxxxxxx"></td></tr>
+                <tr><th scope="row"><label for="goma-ghd-client-secret">Client Secret OAuth GitHub</label></th><td><input id="goma-ghd-client-secret" class="large-text" type="password" name="<?php echo esc_attr(GOMA_GHD_OPTION); ?>[oauth_client_secret]" value="" placeholder="Laisser vide pour conserver le secret"><p class="description">Le secret reste côté serveur WordPress.</p></td></tr>
                 <tr><th scope="row">Activer l’envoi</th><td><label><input type="checkbox" name="<?php echo esc_attr(GOMA_GHD_OPTION); ?>[enabled]" value="1" <?php checked($settings['enabled'], 1); ?>> Envoyer automatiquement à la publication</label></td></tr>
-                <tr><th scope="row"><label for="goma-ghd-owner">Propriétaire GitHub</label></th><td><input id="goma-ghd-owner" class="regular-text" type="text" name="<?php echo esc_attr(GOMA_GHD_OPTION); ?>[owner]" value="<?php echo esc_attr($settings['owner']); ?>" placeholder="oredytech" required><p class="description">Nom du compte ou de l’organisation GitHub.</p></td></tr>
-                <tr><th scope="row"><label for="goma-ghd-repository">Dépôt GitHub</label></th><td><input id="goma-ghd-repository" class="regular-text" type="text" name="<?php echo esc_attr(GOMA_GHD_OPTION); ?>[repository]" value="<?php echo esc_attr($settings['repository']); ?>" placeholder="GOMA-WEBRADIO-APPLICATION-MOBILE" required></td></tr>
+                <tr><th scope="row">Compte connecté</th><td><?php echo $settings['github_user'] ? esc_html($settings['github_user']) : 'Aucun compte connecté'; ?><br><a class="button button-secondary" href="<?php echo esc_url(wp_nonce_url(admin_url('options-general.php?page=goma-github-dispatch&goma_ghd_oauth=start'), GOMA_GHD_OAUTH_NONCE)); ?>">Se connecter à GitHub / créer le token</a></td></tr>
+                <tr><th scope="row"><label for="goma-ghd-repository">Dépôt cible</label></th><td><?php if ($repositories) : ?><select id="goma-ghd-repository" name="<?php echo esc_attr(GOMA_GHD_OPTION); ?>[repository]" required><option value="">-- Choisir un dépôt --</option><?php foreach ($repositories as $repo) : ?><option value="<?php echo esc_attr($repo['name']); ?>" data-owner="<?php echo esc_attr($repo['owner']); ?>" <?php selected($settings['owner'] . '/' . $settings['repository'], $repo['full_name']); ?>><?php echo esc_html($repo['full_name'] . ($repo['private'] ? ' (privé)' : '')); ?></option><?php endforeach; ?></select><input id="goma-ghd-owner" type="hidden" name="<?php echo esc_attr(GOMA_GHD_OPTION); ?>[owner]" value="<?php echo esc_attr($settings['owner']); ?>"><script>document.getElementById('goma-ghd-repository').addEventListener('change',function(){document.getElementById('goma-ghd-owner').value=this.options[this.selectedIndex].dataset.owner||'';});</script><?php else : ?><p>Connecte GitHub pour charger les dépôts accessibles.</p><input type="hidden" name="<?php echo esc_attr(GOMA_GHD_OPTION); ?>[owner]" value="<?php echo esc_attr($settings['owner']); ?>"><input id="goma-ghd-repository" class="regular-text" type="text" name="<?php echo esc_attr(GOMA_GHD_OPTION); ?>[repository]" value="<?php echo esc_attr($settings['repository']); ?>" placeholder="GOMA-WEBRADIO-APPLICATION-MOBILE" required><?php endif; ?></td></tr>
                 <tr><th scope="row"><label for="goma-ghd-token">Token GitHub</label></th><td><input id="goma-ghd-token" class="large-text" type="password" name="<?php echo esc_attr(GOMA_GHD_OPTION); ?>[token]" value="" placeholder="Laisser vide pour conserver le token actuel"><p class="description">Token fine-grained avec accès au dépôt et permission « Contents: Read and write ». Il est stocké dans les options privées WordPress.</p></td></tr>
                 <tr><th scope="row"><label for="goma-ghd-event">Type d’événement</label></th><td><input id="goma-ghd-event" class="regular-text" type="text" name="<?php echo esc_attr(GOMA_GHD_OPTION); ?>[event_type]" value="<?php echo esc_attr($settings['event_type']); ?>" placeholder="article_published" required></td></tr>
                 <tr><th scope="row"><label for="goma-ghd-post-types">Types de contenu</label></th><td><input id="goma-ghd-post-types" class="regular-text" type="text" name="<?php echo esc_attr(GOMA_GHD_OPTION); ?>[post_types]" value="<?php echo esc_attr($settings['post_types']); ?>" placeholder="post"><p class="description">Sépare plusieurs types par des virgules, par exemple : post,news.</p></td></tr>
