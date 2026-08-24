@@ -116,7 +116,7 @@ function goma_ghd_start_oauth() {
         'scope' => 'repo',
         'state' => $state,
     ), 'https://github.com/login/oauth/authorize');
-    wp_safe_redirect($url);
+    wp_redirect($url);
     exit;
 }
 
@@ -285,13 +285,12 @@ function goma_ghd_handle_actions() {
     $action = sanitize_key(wp_unslash($_POST['goma_ghd_action']));
     $settings = goma_ghd_settings();
 
-    if (!goma_ghd_valid_settings($settings)) {
-        add_settings_error('goma_ghd', 'invalid', 'Enregistre d’abord tous les champs GitHub.', 'error');
-        return;
-    }
-
     if ('connection' === $action) {
-        $response = wp_remote_get(goma_ghd_api_url(), array('timeout' => 15, 'headers' => goma_ghd_headers()));
+        if (empty($settings['token'])) {
+            add_settings_error('goma_ghd', 'invalid', 'Connecte d’abord un compte GitHub.', 'error');
+            return;
+        }
+        $response = goma_ghd_github_request('https://api.github.com/user');
         if (is_wp_error($response)) {
             add_settings_error('goma_ghd', 'connection', $response->get_error_message(), 'error');
             return;
@@ -301,6 +300,10 @@ function goma_ghd_handle_actions() {
     }
 
     if ('test' === $action) {
+        if (!goma_ghd_valid_settings($settings)) {
+            add_settings_error('goma_ghd', 'invalid', 'Enregistre d’abord tous les champs GitHub et choisis un dépôt.', 'error');
+            return;
+        }
         if (goma_ghd_dispatch(get_posts(array('post_type' => 'post', 'post_status' => 'publish', 'numberposts' => 1))[0]->ID ?? 0, true)) {
             add_settings_error('goma_ghd', 'test', 'Événement de test envoyé à GitHub.', 'updated');
         } else {
@@ -336,7 +339,7 @@ function goma_ghd_settings_page() {
                 <tr><th scope="row"><label for="goma-ghd-client-secret">Client Secret OAuth GitHub</label></th><td><input id="goma-ghd-client-secret" class="large-text" type="password" name="<?php echo esc_attr(GOMA_GHD_OPTION); ?>[oauth_client_secret]" value="" placeholder="Laisser vide pour conserver le secret"><p class="description">Le secret reste côté serveur WordPress.</p></td></tr>
                 <tr><th scope="row">Activer l’envoi</th><td><label><input type="checkbox" name="<?php echo esc_attr(GOMA_GHD_OPTION); ?>[enabled]" value="1" <?php checked($settings['enabled'], 1); ?>> Envoyer automatiquement à la publication</label></td></tr>
                 <tr><th scope="row">Compte connecté</th><td><?php echo $settings['github_user'] ? esc_html($settings['github_user']) : 'Aucun compte connecté'; ?><br><?php if (!empty($settings['oauth_client_id']) && !empty($settings['oauth_client_secret'])) : ?><a class="button button-primary" href="<?php echo esc_url(wp_nonce_url(admin_url('options-general.php?page=goma-github-dispatch&goma_ghd_oauth=start'), GOMA_GHD_OAUTH_NONCE)); ?>">2. Se connecter à GitHub</a><?php else : ?><span class="button disabled" aria-disabled="true">2. Enregistrer d’abord les identifiants</span><?php endif; ?></td></tr>
-                <tr><th scope="row"><label for="goma-ghd-repository">3. Dépôt cible</label></th><td><?php if ($repositories) : ?><select id="goma-ghd-repository" name="<?php echo esc_attr(GOMA_GHD_OPTION); ?>[repository]" required><option value="">-- Choisir un dépôt --</option><?php foreach ($repositories as $repo) : ?><option value="<?php echo esc_attr($repo['name']); ?>" data-owner="<?php echo esc_attr($repo['owner']); ?>" <?php selected($settings['owner'] . '/' . $settings['repository'], $repo['full_name']); ?>><?php echo esc_html($repo['full_name'] . ($repo['private'] ? ' (privé)' : '')); ?></option><?php endforeach; ?></select><input id="goma-ghd-owner" type="hidden" name="<?php echo esc_attr(GOMA_GHD_OPTION); ?>[owner]" value="<?php echo esc_attr($settings['owner']); ?>"><script>document.getElementById('goma-ghd-repository').addEventListener('change',function(){document.getElementById('goma-ghd-owner').value=this.options[this.selectedIndex].dataset.owner||'';});</script><?php else : ?><p>Connecte d’abord GitHub pour charger les dépôts accessibles.</p><input type="hidden" name="<?php echo esc_attr(GOMA_GHD_OPTION); ?>[owner]" value="<?php echo esc_attr($settings['owner']); ?>"><input id="goma-ghd-repository" class="regular-text" type="text" name="<?php echo esc_attr(GOMA_GHD_OPTION); ?>[repository]" value="<?php echo esc_attr($settings['repository']); ?>" placeholder="GOMA-WEBRADIO-APPLICATION-MOBILE" required><?php endif; ?></td></tr>
+                <tr><th scope="row"><label for="goma-ghd-repository">3. Dépôt cible</label></th><td><?php if ($repositories) : ?><select id="goma-ghd-repository" name="<?php echo esc_attr(GOMA_GHD_OPTION); ?>[repository]" required><option value="">-- Choisir un dépôt --</option><?php foreach ($repositories as $repo) : ?><option value="<?php echo esc_attr($repo['name']); ?>" data-owner="<?php echo esc_attr($repo['owner']); ?>" <?php selected($settings['owner'] . '/' . $settings['repository'], $repo['full_name']); ?>><?php echo esc_html($repo['full_name'] . ($repo['private'] ? ' (privé)' : '')); ?></option><?php endforeach; ?></select><input id="goma-ghd-owner" type="hidden" name="<?php echo esc_attr(GOMA_GHD_OPTION); ?>[owner]" value="<?php echo esc_attr($settings['owner']); ?>"><script>document.getElementById('goma-ghd-repository').addEventListener('change',function(){document.getElementById('goma-ghd-owner').value=this.options[this.selectedIndex].dataset.owner||'';});</script><?php else : ?><p>Connecte d’abord GitHub pour charger les dépôts accessibles.</p><input type="hidden" name="<?php echo esc_attr(GOMA_GHD_OPTION); ?>[owner]" value="<?php echo esc_attr($settings['owner']); ?>"><input id="goma-ghd-repository" class="regular-text" type="text" name="<?php echo esc_attr(GOMA_GHD_OPTION); ?>[repository]" value="<?php echo esc_attr($settings['repository']); ?>" placeholder="GOMA-WEBRADIO-APPLICATION-MOBILE"><?php endif; ?></td></tr>
                 <tr><th scope="row"><label for="goma-ghd-token">Token GitHub</label></th><td><input id="goma-ghd-token" class="large-text" type="password" name="<?php echo esc_attr(GOMA_GHD_OPTION); ?>[token]" value="" placeholder="Laisser vide pour conserver le token actuel"><p class="description">Token fine-grained avec accès au dépôt et permission « Contents: Read and write ». Il est stocké dans les options privées WordPress.</p></td></tr>
                 <tr><th scope="row"><label for="goma-ghd-event">Type d’événement</label></th><td><input id="goma-ghd-event" class="regular-text" type="text" name="<?php echo esc_attr(GOMA_GHD_OPTION); ?>[event_type]" value="<?php echo esc_attr($settings['event_type']); ?>" placeholder="article_published" required></td></tr>
                 <tr><th scope="row"><label for="goma-ghd-post-types">Types de contenu</label></th><td><input id="goma-ghd-post-types" class="regular-text" type="text" name="<?php echo esc_attr(GOMA_GHD_OPTION); ?>[post_types]" value="<?php echo esc_attr($settings['post_types']); ?>" placeholder="post"><p class="description">Sépare plusieurs types par des virgules, par exemple : post,news.</p></td></tr>

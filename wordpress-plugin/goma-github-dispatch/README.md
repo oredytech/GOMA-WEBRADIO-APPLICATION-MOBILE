@@ -15,7 +15,7 @@ Plugin WordPress autonome pour déclencher un événement `repository_dispatch` 
 9. Choisis le dépôt cible dans la liste chargée depuis GitHub et enregistre à nouveau.
 10. Utilise **Tester la connexion GitHub**.
 
-La connexion au compte est la première opération fonctionnelle, mais GitHub exige que le Client ID et le Client Secret de l'OAuth App soient enregistrés avant cette connexion. Le plugin désactive donc le bouton tant que ces deux champs ne sont pas renseignés.
+Le dépôt n'est pas nécessaire pour démarrer la connexion : il est chargé et choisi seulement après le retour de GitHub. GitHub exige toutefois que le Client ID et le Client Secret de l'OAuth App soient enregistrés avant cette connexion. Le plugin désactive donc le bouton tant que ces deux champs ne sont pas renseignés.
 
 ## Token GitHub
 
