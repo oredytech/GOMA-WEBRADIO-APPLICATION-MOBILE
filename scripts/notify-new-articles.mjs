@@ -104,8 +104,8 @@ for (const post of newPosts) {
     webpush: {
       fcmOptions: { link: articleUrl },
       notification: {
-        icon: `${appUrl}/icon-192.png`,
-        badge: `${appUrl}/icon-192.png`,
+        icon: `${appUrl}/logo.png`,
+        badge: `${appUrl}/logo.png`,
         ...(image ? { image } : {}),
       },
     },
