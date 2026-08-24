@@ -10,9 +10,12 @@ Plugin WordPress autonome pour déclencher un événement `repository_dispatch` 
 4. Va dans **Réglages > Notifications GitHub**.
 5. Crée une GitHub OAuth App dans **Settings > Developer settings > OAuth Apps > New OAuth App**.
 6. Utilise comme callback l'URL affichée par le plugin, puis renseigne le Client ID et le Client Secret.
-7. Enregistre et clique sur **Se connecter à GitHub / créer le token**.
-8. Autorise l’application avec le compte qui possède le dépôt, puis choisis le dépôt cible dans la liste.
-9. Utilise **Tester la connexion GitHub**.
+7. Enregistre les réglages. Le bouton de connexion est alors activé.
+8. Clique sur **Se connecter à GitHub** et autorise l’application avec le compte qui possède le dépôt.
+9. Choisis le dépôt cible dans la liste chargée depuis GitHub et enregistre à nouveau.
+10. Utilise **Tester la connexion GitHub**.
+
+La connexion au compte est la première opération fonctionnelle, mais GitHub exige que le Client ID et le Client Secret de l'OAuth App soient enregistrés avant cette connexion. Le plugin désactive donc le bouton tant que ces deux champs ne sont pas renseignés.
 
 ## Token GitHub
 
