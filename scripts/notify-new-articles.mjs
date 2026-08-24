@@ -105,7 +105,7 @@ for (const post of newPosts) {
       fcmOptions: { link: articleUrl },
       notification: {
         icon: `${appUrl}/logo.png`,
-        badge: `${appUrl}/logo.png`,
+        badge: `${appUrl}/notification-badge.png`,
         ...(image ? { image } : {}),
       },
     },
