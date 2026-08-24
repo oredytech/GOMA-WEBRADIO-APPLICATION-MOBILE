@@ -104,7 +104,7 @@ function goma_ghd_repositories() {
 function goma_ghd_start_oauth() {
     check_admin_referer(GOMA_GHD_OAUTH_NONCE);
     $settings = goma_ghd_settings();
-    if (empty($settings['oauth_client_id'])) {
+    if (empty($settings['oauth_client_id']) || empty($settings['oauth_client_secret'])) {
         wp_safe_redirect(add_query_arg(array('goma_ghd_notice' => 'oauth_config'), admin_url('options-general.php?page=goma-github-dispatch')));
         exit;
     }
@@ -119,10 +119,10 @@ function goma_ghd_start_oauth() {
     wp_redirect($url);
     exit;
 }
+add_action('admin_post_goma_ghd_oauth_start', 'goma_ghd_start_oauth');
 
 function goma_ghd_handle_oauth_callback() {
     if (!is_admin() || !current_user_can('manage_options') || empty($_GET['goma_ghd_oauth'])) return;
-    if ('start' === $_GET['goma_ghd_oauth']) goma_ghd_start_oauth();
     if ('callback' !== $_GET['goma_ghd_oauth']) return;
     $state = sanitize_text_field(wp_unslash($_GET['state'] ?? ''));
     $saved_state = get_transient('goma_ghd_oauth_' . get_current_user_id());
@@ -340,7 +340,7 @@ function goma_ghd_settings_page() {
                 <tr><th scope="row"><label for="goma-ghd-client-id">Client ID OAuth GitHub</label></th><td><input id="goma-ghd-client-id" class="regular-text" type="text" name="<?php echo esc_attr(GOMA_GHD_OPTION); ?>[oauth_client_id]" value="<?php echo esc_attr($settings['oauth_client_id']); ?>" placeholder="Iv1.xxxxxxxxxxxxx"></td></tr>
                 <tr><th scope="row"><label for="goma-ghd-client-secret">Client Secret OAuth GitHub</label></th><td><input id="goma-ghd-client-secret" class="large-text" type="password" name="<?php echo esc_attr(GOMA_GHD_OPTION); ?>[oauth_client_secret]" value="" placeholder="Laisser vide pour conserver le secret"><?php if (!empty($settings['oauth_client_secret'])) : ?><p class="description"><strong>Secret enregistré.</strong> Il est masqué pour votre sécurité. Remplissez ce champ uniquement pour le remplacer.</p><?php else : ?><p class="description">Le secret reste côté serveur WordPress.</p><?php endif; ?></td></tr>
                 <tr><th scope="row">Activer l’envoi</th><td><label><input type="checkbox" name="<?php echo esc_attr(GOMA_GHD_OPTION); ?>[enabled]" value="1" <?php checked($settings['enabled'], 1); ?>> Envoyer automatiquement à la publication</label></td></tr>
-                <tr><th scope="row">Compte connecté</th><td><strong><?php echo $github_connected ? 'Connecté à GitHub : ' . esc_html($settings['github_user']) : 'Aucun compte GitHub connecté'; ?></strong><br><?php if ($oauth_ready) : ?><a class="button button-primary" href="<?php echo esc_url(wp_nonce_url(admin_url('options-general.php?page=goma-github-dispatch&goma_ghd_oauth=start'), GOMA_GHD_OAUTH_NONCE)); ?>">2. <?php echo $github_connected ? 'Reconnecter le compte GitHub' : 'Se connecter à GitHub'; ?></a><?php else : ?><span class="button disabled" aria-disabled="true">2. Enregistrer d’abord les identifiants</span><?php endif; ?></td></tr>
+                <tr><th scope="row">Compte connecté</th><td><strong><?php echo $github_connected ? 'Connecté à GitHub : ' . esc_html($settings['github_user']) : 'Aucun compte GitHub connecté'; ?></strong><br><?php if ($oauth_ready) : ?><a class="button button-primary" href="<?php echo esc_url(wp_nonce_url(admin_url('admin-post.php?action=goma_ghd_oauth_start'), GOMA_GHD_OAUTH_NONCE)); ?>">2. <?php echo $github_connected ? 'Reconnecter le compte GitHub' : 'Se connecter à GitHub'; ?></a><?php else : ?><span class="button disabled" aria-disabled="true">2. Enregistrer d’abord les identifiants</span><?php endif; ?></td></tr>
                 <tr><th scope="row"><label for="goma-ghd-repository">3. Dépôt cible</label></th><td><?php if ($repositories) : ?><select id="goma-ghd-repository" name="<?php echo esc_attr(GOMA_GHD_OPTION); ?>[repository]" required><option value="">-- Choisir un dépôt --</option><?php foreach ($repositories as $repo) : ?><option value="<?php echo esc_attr($repo['name']); ?>" data-owner="<?php echo esc_attr($repo['owner']); ?>" <?php selected($settings['owner'] . '/' . $settings['repository'], $repo['full_name']); ?>><?php echo esc_html($repo['full_name'] . ($repo['private'] ? ' (privé)' : '')); ?></option><?php endforeach; ?></select><input id="goma-ghd-owner" type="hidden" name="<?php echo esc_attr(GOMA_GHD_OPTION); ?>[owner]" value="<?php echo esc_attr($settings['owner']); ?>"><script>document.getElementById('goma-ghd-repository').addEventListener('change',function(){document.getElementById('goma-ghd-owner').value=this.options[this.selectedIndex].dataset.owner||'';});</script><?php else : ?><p>Connecte d’abord GitHub pour charger la liste des dépôts du compte.</p><select id="goma-ghd-repository" disabled><option>La liste apparaîtra après la connexion GitHub</option></select><input type="hidden" name="<?php echo esc_attr(GOMA_GHD_OPTION); ?>[owner]" value="<?php echo esc_attr($settings['owner']); ?>"><input type="hidden" name="<?php echo esc_attr(GOMA_GHD_OPTION); ?>[repository]" value="<?php echo esc_attr($settings['repository']); ?>"><?php endif; ?></td></tr>
                 <tr><th scope="row"><label for="goma-ghd-token">Token GitHub</label></th><td><input id="goma-ghd-token" class="large-text" type="password" name="<?php echo esc_attr(GOMA_GHD_OPTION); ?>[token]" value="" placeholder="Laisser vide pour conserver le token actuel"><p class="description">Token fine-grained avec accès au dépôt et permission « Contents: Read and write ». Il est stocké dans les options privées WordPress.</p></td></tr>
                 <tr><th scope="row"><label for="goma-ghd-event">Type d’événement</label></th><td><input id="goma-ghd-event" class="regular-text" type="text" name="<?php echo esc_attr(GOMA_GHD_OPTION); ?>[event_type]" value="<?php echo esc_attr($settings['event_type']); ?>" placeholder="article_published" required></td></tr>
