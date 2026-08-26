@@ -43,6 +43,12 @@ Le plugin envoie dans `client_payload` : `article_id`, `post_id`, `post_type`, `
 
 Le script GitHub peut utiliser `article_id` pour récupérer l'article dans l'API REST WordPress et `url`/`image` pour la notification FCM.
 
+## Délai et publications rapprochées
+
+Les contenus publiés sont placés dans une file puis envoyés à GitHub après environ 2 minutes. Plusieurs publications pendant cette fenêtre sont regroupées dans un seul événement `repository_dispatch`, avec `article_ids` dans `client_payload`.
+
+Le délai repose sur WP-Cron : il démarre lorsqu'une visite arrive sur le site. Pour un délai plus régulier sur un site peu visité, configure une vraie tâche cron serveur qui appelle `wp-cron.php` toutes les minutes. Le bouton de test reste envoyé immédiatement.
+
 ## Sécurité
 
 - Ne mets jamais le token dans un article ou dans le code frontend.

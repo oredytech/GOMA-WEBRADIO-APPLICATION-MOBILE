@@ -17,6 +17,14 @@ const messaging = getMessaging(app);
 const postsEndpoint = "https://gomawebradio.com/wp-json/wp/v2/posts";
 const appUrl = process.env.APP_URL?.replace(/\/$/, "");
 const requestedArticleId = process.env.ARTICLE_ID?.trim();
+const requestedArticleIds = (() => {
+  try {
+    const value = JSON.parse(process.env.ARTICLE_IDS ?? "[]");
+    return Array.isArray(value) ? value.map(String).filter(Boolean) : [];
+  } catch {
+    return [];
+  }
+})();
 const invalidTokenCodes = new Set([
   "messaging/invalid-registration-token",
   "messaging/registration-token-not-registered",
@@ -38,6 +46,18 @@ function cleanTitle(value) {
 }
 
 async function fetchPosts() {
+  if (requestedArticleIds.length > 0) {
+    return Promise.all(
+      requestedArticleIds.map(async (id) => {
+        const response = await fetch(`${postsEndpoint}/${encodeURIComponent(id)}?_embed=1`, {
+          headers: { accept: "application/json" },
+        });
+        if (!response.ok)
+          throw new Error(`WordPress request failed [${response.status}] for ${id}`);
+        return response.json();
+      }),
+    );
+  }
   const postsUrl = requestedArticleId
     ? `${postsEndpoint}/${encodeURIComponent(requestedArticleId)}?_embed=1`
     : `${postsEndpoint}?per_page=20&orderby=date&order=desc&_embed=1`;
@@ -70,14 +90,16 @@ if (!latestPost) {
   process.exit(0);
 }
 
-if (!state?.lastId && !requestedArticleId) {
+if (!state?.lastId && !requestedArticleId && !requestedArticleIds.length) {
   await stateRef.set({ lastId: latestPost.id, lastDate: latestPost.date });
   console.log(`Initialized at article ${latestPost.id}; no notification sent.`);
   process.exit(0);
 }
 
 const lastId = state?.lastId ? Number(state.lastId) : Number(latestPost.id) - 1;
-const newPosts = posts.filter((post) => Number(post.id) > lastId).sort((a, b) => a.id - b.id);
+const newPosts = requestedArticleIds.length
+  ? posts.sort((a, b) => a.id - b.id)
+  : posts.filter((post) => Number(post.id) > lastId).sort((a, b) => a.id - b.id);
 if (!newPosts.length) {
   console.log("No new articles.");
   process.exit(0);

@@ -24,3 +24,4 @@ jobs:
           APP_URL: ${{ secrets.APP_URL }}
           FIREBASE_DATABASE_URL: https://app-goma-webradio-default-rtdb.europe-west1.firebasedatabase.app
           ARTICLE_ID: ${{ github.event.client_payload.article_id }}
+          ARTICLE_IDS: ${{ toJSON(github.event.client_payload.article_ids) }}

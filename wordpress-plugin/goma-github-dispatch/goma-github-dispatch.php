@@ -15,6 +15,8 @@ const GOMA_GHD_OPTION = 'goma_ghd_settings';
 const GOMA_GHD_LOG_OPTION = 'goma_ghd_log';
 const GOMA_GHD_NONCE = 'goma_ghd_save_settings';
 const GOMA_GHD_OAUTH_NONCE = 'goma_ghd_oauth';
+const GOMA_GHD_QUEUE_OPTION = 'goma_ghd_pending_posts';
+const GOMA_GHD_QUEUE_HOOK = 'goma_ghd_dispatch_pending_posts';
 
 function goma_ghd_defaults() {
     return array(
@@ -220,6 +222,29 @@ function goma_ghd_dispatch($post_id, $is_test = false) {
     return true;
 }
 
+function goma_ghd_dispatch_pending_posts() {
+    $post_ids = array_values(array_unique(array_map('absint', (array) get_option(GOMA_GHD_QUEUE_OPTION, array()))));
+    delete_option(GOMA_GHD_QUEUE_OPTION);
+    if (!$post_ids) return;
+    $settings = goma_ghd_settings();
+    if (!$settings['enabled'] || !goma_ghd_valid_settings($settings)) {
+        goma_ghd_log('File d’articles ignorée : configuration GitHub incomplète ou envoi désactivé.', false);
+        return;
+    }
+    $payload = array('article_ids' => array_map('strval', $post_ids), 'article_id' => (string) $post_ids[0], 'site_url' => home_url('/'));
+    $response = wp_remote_post(goma_ghd_api_url('/dispatches'), array(
+        'timeout' => 20,
+        'headers' => goma_ghd_headers(),
+        'body' => wp_json_encode(array('event_type' => sanitize_key($settings['event_type']), 'client_payload' => $payload)),
+    ));
+    if (is_wp_error($response) || wp_remote_retrieve_response_code($response) < 200 || wp_remote_retrieve_response_code($response) >= 300) {
+        goma_ghd_log('Échec de l’envoi groupé GitHub pour ' . count($post_ids) . ' article(s).', false);
+        return;
+    }
+    goma_ghd_log('Envoi groupé GitHub lancé pour ' . count($post_ids) . ' article(s).');
+}
+add_action(GOMA_GHD_QUEUE_HOOK, 'goma_ghd_dispatch_pending_posts');
+
 function goma_ghd_post_types() {
     $settings = goma_ghd_settings();
     $types = array_map('sanitize_key', preg_split('/[,\s]+/', (string) $settings['post_types'], -1, PREG_SPLIT_NO_EMPTY));
@@ -233,7 +258,12 @@ function goma_ghd_on_publish($new_status, $old_status, $post) {
     if (!in_array($post->post_type, goma_ghd_post_types(), true)) {
         return;
     }
-    goma_ghd_dispatch($post->ID);
+    $pending = (array) get_option(GOMA_GHD_QUEUE_OPTION, array());
+    $pending[] = $post->ID;
+    update_option(GOMA_GHD_QUEUE_OPTION, array_values(array_unique(array_map('absint', $pending))), false);
+    if (!wp_next_scheduled(GOMA_GHD_QUEUE_HOOK)) {
+        wp_schedule_single_event(time() + 2 * MINUTE_IN_SECONDS, GOMA_GHD_QUEUE_HOOK);
+    }
 }
 add_action('transition_post_status', 'goma_ghd_on_publish', 10, 3);
 
