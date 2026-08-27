@@ -29,7 +29,7 @@ const invalidTokenCodes = new Set([
   "messaging/invalid-registration-token",
   "messaging/registration-token-not-registered",
 ]);
-const retryDelayMs = 5 * 60 * 1000;
+const retryDelayMs = 10 * 1000;
 
 if (!appUrl) throw new Error("APP_URL secret is required");
 
@@ -51,6 +51,7 @@ async function fetchPosts() {
       requestedArticleIds.map(async (id) => {
         const response = await fetch(`${postsEndpoint}/${encodeURIComponent(id)}?_embed=1`, {
           headers: { accept: "application/json" },
+          signal: AbortSignal.timeout(15_000),
         });
         if (!response.ok)
           throw new Error(`WordPress request failed [${response.status}] for ${id}`);
@@ -61,7 +62,10 @@ async function fetchPosts() {
   const postsUrl = requestedArticleId
     ? `${postsEndpoint}/${encodeURIComponent(requestedArticleId)}?_embed=1`
     : `${postsEndpoint}?per_page=20&orderby=date&order=desc&_embed=1`;
-  const response = await fetch(postsUrl, { headers: { accept: "application/json" } });
+  const response = await fetch(postsUrl, {
+    headers: { accept: "application/json" },
+    signal: AbortSignal.timeout(15_000),
+  });
   if (!response.ok) throw new Error(`WordPress request failed [${response.status}]`);
   const payload = await response.json();
   return Array.isArray(payload) ? payload : [payload];
@@ -149,7 +153,7 @@ for (const post of newPosts) {
   );
   if (retryTokens.length) {
     console.log(
-      `Retrying ${retryTokens.length} failed notification(s) for article ${post.id} in 5 minutes.`,
+      `Retrying ${retryTokens.length} failed notification(s) for article ${post.id} in 10 seconds.`,
     );
     await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
     const retryResult = await messaging.sendEachForMulticast({

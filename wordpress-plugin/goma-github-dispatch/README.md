@@ -1,51 +1,35 @@
-# GOMA - GitHub Article Notifications
+# GOMA - FCM Article Notifications
 
-Plugin WordPress autonome pour déclencher un événement `repository_dispatch` GitHub lorsqu'un contenu est publié.
+Plugin WordPress autonome pour envoyer directement une notification Firebase Cloud Messaging lorsqu'un contenu est publié.
 
 ## Installation
 
 1. Télécharge le dossier `goma-github-dispatch`.
 2. Compresse-le en `goma-github-dispatch.zip` ou copie-le dans `wp-content/plugins/`.
-3. Dans WordPress, ouvre **Extensions** et active **GOMA - GitHub Article Notifications**.
-4. Va dans **Réglages > Notifications GitHub**.
-5. Crée une GitHub OAuth App dans **Settings > Developer settings > OAuth Apps > New OAuth App**.
-6. Utilise comme callback l'URL affichée par le plugin, puis renseigne le Client ID et le Client Secret.
-7. Enregistre les réglages. Le bouton de connexion est alors activé.
-8. Clique sur **Se connecter à GitHub** et autorise l’application avec le compte qui possède le dépôt.
-9. Choisis le dépôt cible dans la liste chargée depuis GitHub et enregistre à nouveau.
-10. Utilise **Tester la connexion GitHub**.
+3. Dans WordPress, ouvre **Extensions** et active **GOMA - FCM Article Notifications**.
+4. Va dans **Réglages > Notifications FCM**.
+5. Dans Firebase Console, crée un compte de service et télécharge sa clé JSON.
+6. Colle le JSON dans le champ **Compte de service Firebase JSON**.
+7. Renseigne l’ID du projet, l’URL Realtime Database, le chemin des tokens et l’URL de l’application, puis enregistre.
+8. Utilise **Envoyer un événement de test**.
 
-Le dépôt n'est pas nécessaire pour démarrer la connexion : il est chargé et choisi seulement après le retour de GitHub. GitHub exige toutefois que le Client ID et le Client Secret de l'OAuth App soient enregistrés avant cette connexion. Le plugin désactive donc le bouton tant que ces deux champs ne sont pas renseignés.
+Le compte de service doit avoir le rôle IAM **Cloud Datastore Viewer** ou **Firebase Realtime Database Viewer** dans Google Cloud IAM, et les règles Realtime Database doivent autoriser la lecture serveur. Le plugin utilise les scopes OAuth `userinfo.email` et `firebase.database`, lit les tokens sous `fcmTokens`, puis appelle l’API FCM HTTP v1 sans exposer la clé privée au navigateur. L’URL d’ouverture des notifications est `https://app.gomawebradio.com/articles/<slug>`.
 
-## Token GitHub
+Les paramètres suivants sont configurables dans le plugin :
 
-Le bouton OAuth crée et enregistre un token OAuth côté WordPress. Pour les dépôts privés, l'autorisation OAuth utilise la portée `repo`.
+- **ID du projet Firebase** : valeur `project_id` du compte de service.
+- **URL Realtime Database** : URL de l’instance qui contient les tokens.
+- **URL de l’application** : base du lien ouvert par une notification.
+- **Chemin des tokens** : nœud Firebase contenant les appareils, par exemple `fcmTokens`.
+- **Chemin des articles** : modèle du lien, avec `{slug}` remplacé par le slug WordPress, par exemple `articles/{slug}`.
+- **Titre de notification** : titre affiché sur les appareils.
+- **Types de contenu** : types WordPress qui déclenchent l’envoi.
 
-Alternative manuelle : crée un token fine-grained limité au dépôt cible avec au minimum :
-
-- Repository access : le dépôt cible uniquement
-- Repository permissions : `Contents: Read and write`
-- Metadata : `Read-only`
-
-Les identifiants OAuth et le token sont stockés dans les options privées WordPress et ne sont jamais envoyés au navigateur public. La création d'un token GitHub personnel ne peut pas être automatisée directement par un plugin ; OAuth est le mécanisme prévu par GitHub.
-
-## Contrat avec GitHub Actions
-
-Le workflow du dépôt doit écouter :
-
-```yaml
-on:
-  repository_dispatch:
-    types: [article_published]
-```
-
-Le plugin envoie dans `client_payload` : `article_id`, `post_id`, `post_type`, `slug`, `title`, `url`, `image`, `published_at` et `site_url`.
-
-Le script GitHub peut utiliser `article_id` pour récupérer l'article dans l'API REST WordPress et `url`/`image` pour la notification FCM.
+Par défaut, la base contient un nœud `fcmTokens` à sa racine, avec chaque appareil sous `fcmTokens/<uid>/token`. Vérifie que l’URL et le chemin saisis dans le plugin correspondent à la structure visible dans Firebase.
 
 ## Délai et publications rapprochées
 
-Les contenus publiés sont placés dans une file puis envoyés à GitHub après environ 2 minutes. Plusieurs publications pendant cette fenêtre sont regroupées dans un seul événement `repository_dispatch`, avec `article_ids` dans `client_payload`.
+Les contenus publiés sont placés dans une file puis envoyés à FCM après environ 2 minutes. Plusieurs publications pendant cette fenêtre sont envoyées séparément afin que chaque notification contienne son titre, son image et son URL.
 
 Le délai repose sur WP-Cron : il démarre lorsqu'une visite arrive sur le site. Pour un délai plus régulier sur un site peu visité, configure une vraie tâche cron serveur qui appelle `wp-cron.php` toutes les minutes. Le bouton de test reste envoyé immédiatement.
 
@@ -54,4 +38,5 @@ Le délai repose sur WP-Cron : il démarre lorsqu'une visite arrive sur le site.
 - Ne mets jamais le token dans un article ou dans le code frontend.
 - Limite le token au dépôt nécessaire.
 - Supprime ou régénère le token immédiatement s'il est exposé.
-- Le bouton « Envoyer un événement de test » utilise le dernier article publié avec `test: true`.
+- Le bouton « Envoyer un événement de test » utilise le dernier article publié.
+- Ne colle jamais la clé JSON dans le frontend ou dans un dépôt public.
