@@ -85,23 +85,31 @@ export function useNotifications() {
       unsubscribe = onMessage(messaging, (payload) => {
         const title = payload.notification?.title ?? "GOMA WEBRADIO";
         const body = payload.notification?.body ?? "Une nouvelle information est disponible.";
+        const notificationTag =
+          payload.data?.notification_id ?? `goma-article-${payload.data?.article_id ?? "default"}`;
         if (Notification.permission !== "granted") return;
         void navigator.serviceWorker
           .getRegistration("/firebase-messaging-sw.js")
           .then((registration) => {
             if (registration) {
-              void registration.showNotification(title, {
-                body,
-                icon: "/logo.png",
-                tag: payload.messageId,
-                data: { url: payload.data?.url ?? "/notifications" },
+              void registration.getNotifications({ tag: notificationTag }).then((notifications) => {
+                notifications.forEach((notification) => notification.close());
+                return registration.showNotification(title, {
+                  body,
+                  icon: "/logo.png",
+                  badge: "/notification-badge.png",
+                  image: payload.data?.image || undefined,
+                  tag: notificationTag,
+                  renotify: false,
+                  data: { url: payload.data?.url ?? "/notifications" },
+                });
               });
               return;
             }
             const notification = new Notification(title, {
               body,
               icon: "/logo.png",
-              tag: payload.messageId,
+              tag: notificationTag,
             });
             notification.onclick = () => {
               window.location.assign(payload.data?.url ?? "/notifications");

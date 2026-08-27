@@ -15,15 +15,24 @@ const messaging = firebase.messaging();
 
 messaging.onBackgroundMessage((payload) => {
   const title = payload.notification?.title || "GOMA WEBRADIO";
+  const notificationId =
+    payload.data?.notification_id || `goma-article-${payload.data?.article_id || "default"}`;
   const options = {
     body: payload.notification?.body || "Une nouvelle information est disponible.",
-    icon: "/logo.png",
-    badge: "/notification-badge.png",
+    icon: payload.notification?.icon || "/logo.png",
+    badge: payload.notification?.badge || "/notification-badge.png",
     image: payload.notification?.image || payload.data?.image || undefined,
-    tag: payload.messageId || "goma-webradio",
-    data: { url: payload.fcmOptions?.link || payload.data?.url || "/notifications" },
+    tag: notificationId,
+    renotify: false,
+    data: {
+      url: payload.fcmOptions?.link || payload.data?.url || "/notifications",
+      article_id: payload.data?.article_id,
+    },
   };
-  return self.registration.showNotification(title, options);
+  return self.registration.getNotifications({ tag: notificationId }).then((notifications) => {
+    notifications.forEach((notification) => notification.close());
+    return self.registration.showNotification(title, options);
+  });
 });
 
 self.addEventListener("notificationclick", (event) => {

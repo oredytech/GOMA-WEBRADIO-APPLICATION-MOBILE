@@ -223,12 +223,24 @@ function goma_ghd_dispatch($post_id, $is_test = false) {
         'test' => (bool) $is_test,
     );
 
-    $notification = array('title' => (string) $settings['notification_title'], 'body' => $payload['title']);
+    $notification = array('title' => $payload['title'], 'body' => (string) $settings['notification_title']);
     if ($payload['image']) $notification['image'] = $payload['image'];
+    $notification_id = 'goma-article-' . $payload['article_id'];
+    $webpush_notification = array(
+        'title' => $payload['title'],
+        'body' => (string) $settings['notification_title'],
+        'icon' => trailingslashit($settings['app_url']) . 'logo.png',
+        'badge' => trailingslashit($settings['app_url']) . 'notification-badge.png',
+        'tag' => $notification_id,
+    );
+    if ($payload['image']) $webpush_notification['image'] = $payload['image'];
     $result = goma_ghd_fcm_send(array(
         'notification' => $notification,
-        'data' => array('url' => (string) $payload['url'], 'image' => (string) $payload['image'], 'article_id' => (string) $payload['article_id']),
-        'webpush' => array('fcm_options' => array('link' => (string) $payload['url'])),
+        'data' => array('url' => (string) $payload['url'], 'image' => (string) $payload['image'], 'article_id' => (string) $payload['article_id'], 'notification_id' => $notification_id),
+        'webpush' => array(
+            'fcm_options' => array('link' => (string) $payload['url']),
+            'notification' => $webpush_notification,
+        ),
     ));
     if (is_wp_error($result)) {
         goma_ghd_log('Erreur FCM : ' . $result->get_error_message(), false);
