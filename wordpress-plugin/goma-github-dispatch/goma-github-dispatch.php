@@ -230,13 +230,13 @@ function goma_ghd_dispatch($post_id, $is_test = false) {
         'title' => $payload['title'],
         'body' => (string) $settings['notification_title'],
         'icon' => trailingslashit($settings['app_url']) . 'logo.png',
-        'badge' => trailingslashit($settings['app_url']) . 'notification-badge.png',
+        'badge' => $payload['image'] ?: trailingslashit($settings['app_url']) . 'notification-badge.png',
         'tag' => $notification_id,
     );
     if ($payload['image']) $webpush_notification['image'] = $payload['image'];
     $result = goma_ghd_fcm_send(array(
         'notification' => $notification,
-        'data' => array('url' => (string) $payload['url'], 'image' => (string) $payload['image'], 'article_id' => (string) $payload['article_id'], 'notification_id' => $notification_id),
+        'data' => array('url' => (string) $payload['url'], 'image' => (string) $payload['image'], 'title' => (string) $payload['title'], 'article_id' => (string) $payload['article_id'], 'notification_id' => $notification_id),
         'webpush' => array(
             'fcm_options' => array('link' => (string) $payload['url']),
             'notification' => $webpush_notification,

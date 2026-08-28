@@ -83,8 +83,9 @@ export function useNotifications() {
     void getBrowserMessaging().then((messaging) => {
       if (!messaging) return;
       unsubscribe = onMessage(messaging, (payload) => {
-        const title = payload.notification?.title ?? "GOMA WEBRADIO";
+        const title = payload.notification?.title ?? payload.data?.title ?? "GOMA WEBRADIO";
         const body = payload.notification?.body ?? "Une nouvelle information est disponible.";
+        const featuredImage = payload.notification?.image ?? payload.data?.image ?? undefined;
         const notificationTag =
           payload.data?.notification_id ?? `goma-article-${payload.data?.article_id ?? "default"}`;
         if (Notification.permission !== "granted") return;
@@ -97,8 +98,8 @@ export function useNotifications() {
                 return registration.showNotification(title, {
                   body,
                   icon: "/logo.png",
-                  badge: "/notification-badge.png",
-                  image: payload.data?.image || undefined,
+                  badge: featuredImage || "/notification-badge.png",
+                  image: featuredImage,
                   tag: notificationTag,
                   renotify: false,
                   data: { url: payload.data?.url ?? "/notifications" },
@@ -176,7 +177,7 @@ export function useNotifications() {
     if (!fresh.length) return;
     for (const n of fresh) {
       try {
-        new Notification(n.title, { body: n.desc, icon: "/logo.png", tag: n.id });
+        new Notification(n.desc, { body: n.title, icon: "/logo.png", tag: n.id });
       } catch {
         /* ignore */
       }

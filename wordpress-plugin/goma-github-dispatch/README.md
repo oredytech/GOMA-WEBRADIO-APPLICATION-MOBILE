@@ -31,7 +31,7 @@ Par défaut, la base contient un nœud `fcmTokens` à sa racine, avec chaque app
 
 Les contenus publiés sont placés dans une file puis envoyés à FCM après environ 2 minutes. Plusieurs publications pendant cette fenêtre sont envoyées séparément afin que chaque notification contienne son titre, son image et son URL.
 
-Chaque notification utilise le titre de l’article, son image mise en avant, l’icône `/logo.png` et le badge `/notification-badge.png`. Un identifiant stable par article est utilisé comme tag afin qu’une nouvelle tentative remplace la notification existante au lieu d’en afficher une seconde.
+Chaque notification utilise le titre complet de l’article, son image mise en avant comme image et badge, ainsi que l’icône `/logo.png`. Le badge `/notification-badge.png` sert de repli lorsqu’un article n’a pas d’image. Un identifiant stable par article est utilisé comme tag afin qu’une nouvelle tentative remplace la notification existante au lieu d’en afficher une seconde.
 
 Le délai repose sur WP-Cron : il démarre lorsqu'une visite arrive sur le site. Pour un délai plus régulier sur un site peu visité, configure une vraie tâche cron serveur qui appelle `wp-cron.php` toutes les minutes. Le bouton de test reste envoyé immédiatement.
 

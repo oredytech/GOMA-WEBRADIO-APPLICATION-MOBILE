@@ -14,14 +14,15 @@ firebase.initializeApp({
 const messaging = firebase.messaging();
 
 messaging.onBackgroundMessage((payload) => {
-  const title = payload.notification?.title || "GOMA WEBRADIO";
+  const title = payload.notification?.title || payload.data?.title || "GOMA WEBRADIO";
+  const featuredImage = payload.notification?.image || payload.data?.image || undefined;
   const notificationId =
     payload.data?.notification_id || `goma-article-${payload.data?.article_id || "default"}`;
   const options = {
     body: payload.notification?.body || "Une nouvelle information est disponible.",
     icon: payload.notification?.icon || "/logo.png",
-    badge: payload.notification?.badge || "/notification-badge.png",
-    image: payload.notification?.image || payload.data?.image || undefined,
+    badge: payload.notification?.badge || featuredImage || "/notification-badge.png",
+    image: featuredImage,
     tag: notificationId,
     renotify: false,
     data: {

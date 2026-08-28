@@ -125,13 +125,13 @@ for (const post of newPosts) {
   const articleUrl = `${appUrl}/articles/${post.slug}`;
   const message = {
     tokens: tokens.map((entry) => entry.token),
-    notification: { title: "Nouvel article", body: title, ...(image ? { imageUrl: image } : {}) },
-    data: { url: articleUrl, image: image ?? "" },
+    notification: { title, body: "Nouvel article", ...(image ? { imageUrl: image } : {}) },
+    data: { url: articleUrl, title, image: image ?? "" },
     webpush: {
       fcmOptions: { link: articleUrl },
       notification: {
         icon: `${appUrl}/logo.png`,
-        badge: `${appUrl}/notification-badge.png`,
+        badge: image ?? `${appUrl}/notification-badge.png`,
         ...(image ? { image } : {}),
       },
     },
