@@ -2,7 +2,7 @@
 /**
  * Plugin Name: GOMA - FCM Article Notifications
  * Description: Envoie une notification FCM lors de la publication d'un contenu WordPress.
- * Version: 1.0.0
+ * Version: 1.1.0
  * Requires at least: 5.8
  * Requires PHP: 7.4
  * Author: GOMA Webradio
