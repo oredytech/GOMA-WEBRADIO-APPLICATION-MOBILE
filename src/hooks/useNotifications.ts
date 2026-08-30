@@ -48,7 +48,6 @@ export function useNotifications() {
   const [pushStatus, setPushStatus] = useState<NotificationPermission | "unsupported" | "default">(
     "default",
   );
-  const [fcmEnabled, setFcmEnabled] = useState(false);
   const [pushEnabled, setPushEnabled] = useState(false);
 
   useEffect(() => {
@@ -119,7 +118,7 @@ export function useNotifications() {
       });
     });
     return () => unsubscribe?.();
-  }, [hydrated, fcmEnabled]);
+  }, [hydrated, pushEnabled]);
 
   const items = useMemo<NotificationItem[]>(() => {
     const articles: NotificationItem[] = (articlesQ.data ?? []).slice(0, 12).map((a) => ({
@@ -200,7 +199,6 @@ export function useNotifications() {
       const status = await enableFirebasePush();
       setPushStatus(status);
       if (status === "granted") {
-        setFcmEnabled(true);
         setPushEnabled(true);
       }
       return status;
@@ -212,7 +210,6 @@ export function useNotifications() {
   const disablePush = useCallback(async () => {
     await disableFirebasePush();
     setPushEnabled(false);
-    setFcmEnabled(false);
   }, []);
 
   return {

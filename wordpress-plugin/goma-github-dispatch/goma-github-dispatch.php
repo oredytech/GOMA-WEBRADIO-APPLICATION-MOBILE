@@ -267,16 +267,18 @@ function goma_ghd_dispatch_pending_posts() {
         goma_ghd_log('File d’articles ignorée : configuration Firebase incomplète ou envoi désactivé.', false);
         return;
     }
-    $failed = array();
-    foreach ($post_ids as $post_id) {
-        if (!goma_ghd_dispatch($post_id)) $failed[] = $post_id;
-    }
+    $post_id = array_shift($post_ids);
+    $failed = goma_ghd_dispatch($post_id) ? array() : array($post_id);
     $new_posts = (array) get_option(GOMA_GHD_QUEUE_OPTION, array());
     $remaining = array_values(array_unique(array_map('absint', array_merge($failed, $new_posts))));
     if ($remaining) {
         update_option(GOMA_GHD_QUEUE_OPTION, $remaining, false);
-        if (!wp_next_scheduled(GOMA_GHD_QUEUE_HOOK)) wp_schedule_single_event(time() + GOMA_GHD_RETRY_DELAY, GOMA_GHD_QUEUE_HOOK);
-        goma_ghd_log('Nouvelle tentative programmée pour ' . count($remaining) . ' article(s).', false);
+        $delay = $failed ? GOMA_GHD_RETRY_DELAY : 2 * MINUTE_IN_SECONDS;
+        if (!wp_next_scheduled(GOMA_GHD_QUEUE_HOOK)) wp_schedule_single_event(time() + $delay, GOMA_GHD_QUEUE_HOOK);
+        goma_ghd_log(
+            ($failed ? 'Nouvelle tentative' : 'Notification suivante') . ' programmée dans ' . round($delay / MINUTE_IN_SECONDS, 1) . ' minute(s) pour ' . count($remaining) . ' article(s).',
+            !$failed
+        );
     }
 }
 add_action(GOMA_GHD_QUEUE_HOOK, 'goma_ghd_dispatch_pending_posts');
@@ -363,6 +365,21 @@ function goma_ghd_handle_actions() {
         } else {
             add_settings_error('goma_ghd', 'test', 'Échec de l’envoi de test. Consulte le journal ci-dessous.', 'error');
         }
+    } elseif ('dispatch_now' === $action) {
+        if (!get_option(GOMA_GHD_QUEUE_OPTION, array())) {
+            add_settings_error('goma_ghd', 'queue_empty', 'La file d’articles est déjà vide.', 'notice');
+            return;
+        }
+        $scheduled = wp_next_scheduled(GOMA_GHD_QUEUE_HOOK);
+        if ($scheduled) wp_unschedule_event($scheduled, GOMA_GHD_QUEUE_HOOK);
+        goma_ghd_dispatch_pending_posts();
+        add_settings_error('goma_ghd', 'queue_dispatched', 'Le prochain article de la file a été traité.', 'updated');
+    } elseif ('clear_queue' === $action) {
+        delete_option(GOMA_GHD_QUEUE_OPTION);
+        while ($scheduled = wp_next_scheduled(GOMA_GHD_QUEUE_HOOK)) {
+            wp_unschedule_event($scheduled, GOMA_GHD_QUEUE_HOOK);
+        }
+        add_settings_error('goma_ghd', 'queue_cleared', 'La file d’articles a été vidée.', 'updated');
     }
 }
 
@@ -373,6 +390,8 @@ function goma_ghd_settings_page() {
     goma_ghd_handle_actions();
     $settings = goma_ghd_settings();
     $log = (array) get_option(GOMA_GHD_LOG_OPTION, array());
+    $pending_posts = array_values(array_unique(array_map('absint', (array) get_option(GOMA_GHD_QUEUE_OPTION, array()))));
+    $next_dispatch = wp_next_scheduled(GOMA_GHD_QUEUE_HOOK);
     ?>
     <div class="wrap">
         <h1>Notifications FCM</h1>
@@ -400,6 +419,16 @@ function goma_ghd_settings_page() {
         <form method="post" style="display:inline-block;">
             <?php wp_nonce_field(GOMA_GHD_NONCE); ?><input type="hidden" name="goma_ghd_action" value="test"><?php submit_button('Envoyer un événement de test', 'secondary', 'submit', false); ?>
         </form>
+        <h2>File d’envoi</h2>
+        <p><strong><?php echo esc_html(count($pending_posts)); ?></strong> article(s) en attente<?php if ($next_dispatch) : ?>. Prochain traitement : <strong><?php echo esc_html(wp_date(get_option('date_format') . ' ' . get_option('time_format'), $next_dispatch)); ?></strong><?php endif; ?>.</p>
+        <?php if ($pending_posts) : ?>
+            <form method="post" style="display:inline-block; margin-right:8px;">
+                <?php wp_nonce_field(GOMA_GHD_NONCE); ?><input type="hidden" name="goma_ghd_action" value="dispatch_now"><?php submit_button('Traiter maintenant', 'secondary', 'submit', false); ?>
+            </form>
+            <form method="post" style="display:inline-block;">
+                <?php wp_nonce_field(GOMA_GHD_NONCE); ?><input type="hidden" name="goma_ghd_action" value="clear_queue"><?php submit_button('Vider la file', 'delete', 'submit', false, 'onclick="return confirm(\'Vider la file sans envoyer les articles ?\');"'); ?>
+            </form>
+        <?php endif; ?>
         <h2>Journal récent</h2>
         <?php if (!$log) : ?><p>Aucun événement enregistré.</p><?php else : ?><table class="widefat striped"><thead><tr><th>Date</th><th>Résultat</th><th>Détail</th></tr></thead><tbody><?php foreach ($log as $entry) : ?><tr><td><?php echo esc_html($entry['time']); ?></td><td><?php echo !empty($entry['success']) ? 'OK' : 'Erreur'; ?></td><td><?php echo esc_html($entry['message']); ?></td></tr><?php endforeach; ?></tbody></table><?php endif; ?>
     </div>

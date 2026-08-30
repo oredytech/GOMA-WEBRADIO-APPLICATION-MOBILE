@@ -37,6 +37,7 @@ export async function requestFirebaseToken(): Promise<string | null> {
   const messaging = await getBrowserMessaging();
   if (!messaging) return null;
   const registration = await navigator.serviceWorker.register("/firebase-messaging-sw.js");
+  await navigator.serviceWorker.ready;
   return getToken(messaging, {
     vapidKey: firebaseVapidKey,
     serviceWorkerRegistration: registration,
@@ -67,11 +68,17 @@ export async function enableFirebasePush(): Promise<NotificationPermission | "un
   if (typeof Notification === "undefined") return "unsupported";
   const permission = await Notification.requestPermission();
   if (permission !== "granted") return permission;
+  return (await syncFirebasePush()) ? permission : "unsupported";
+}
+
+export async function syncFirebasePush(): Promise<boolean> {
+  if (typeof window === "undefined" || typeof Notification === "undefined") return false;
+  if (Notification.permission !== "granted") return false;
   const token = await requestFirebaseToken();
-  if (!token) return "unsupported";
+  if (!token) return false;
   await saveFcmToken(token);
   window.localStorage.setItem("gw-fcm-token", token);
   window.localStorage.setItem(PUSH_ENABLED_KEY, "1");
   window.dispatchEvent(new Event(PUSH_SETTING_EVENT));
-  return permission;
+  return true;
 }

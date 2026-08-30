@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { enableFirebasePush, PUSH_ENABLED_KEY } from "@/lib/firebase";
+import { enableFirebasePush, PUSH_ENABLED_KEY, syncFirebasePush } from "@/lib/firebase";
 
 const DISMISSED_KEY = "gw-push-prompt-dismissed";
 
@@ -9,11 +9,13 @@ export function PushPrompt() {
 
   useEffect(() => {
     if (typeof window === "undefined" || typeof Notification === "undefined") return;
-    if (
-      Notification.permission !== "default" ||
-      localStorage.getItem(PUSH_ENABLED_KEY) === "1" ||
-      localStorage.getItem(DISMISSED_KEY) === "1"
-    )
+    if (Notification.permission === "granted") {
+      if (localStorage.getItem(PUSH_ENABLED_KEY) !== "0") {
+        void syncFirebasePush().catch(() => undefined);
+      }
+      return;
+    }
+    if (Notification.permission !== "default" || localStorage.getItem(DISMISSED_KEY) === "1")
       return;
     const timer = window.setTimeout(() => setVisible(true), 1200);
     return () => window.clearTimeout(timer);
@@ -31,6 +33,8 @@ export function PushPrompt() {
     try {
       const status = await enableFirebasePush();
       if (status === "granted") close();
+    } catch {
+      localStorage.removeItem(PUSH_ENABLED_KEY);
     } finally {
       setBusy(false);
     }

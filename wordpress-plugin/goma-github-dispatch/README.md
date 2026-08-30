@@ -35,6 +35,10 @@ Chaque notification utilise le titre complet de l’article, son image mise en a
 
 Le délai repose sur WP-Cron : il démarre lorsqu'une visite arrive sur le site. Pour un délai plus régulier sur un site peu visité, configure une vraie tâche cron serveur qui appelle `wp-cron.php` toutes les minutes. Le bouton de test reste envoyé immédiatement.
 
+Les articles en attente sont envoyés un par un, avec deux minutes entre deux notifications. Le service worker Firebase peut ainsi afficher les notifications même si l'application mobile n'est pas ouverte.
+
+La page **Réglages > Notifications FCM** affiche le nombre d'articles en attente et l'heure du prochain traitement. Le bouton **Traiter maintenant** envoie le prochain article sans attendre le cron, tandis que **Vider la file** supprime les articles en attente sans les envoyer.
+
 ## Sécurité
 
 - Ne mets jamais le token dans un article ou dans le code frontend.
