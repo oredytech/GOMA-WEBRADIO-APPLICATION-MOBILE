@@ -24,6 +24,7 @@ import { Route as ArticlesIndexRouteImport } from './routes/articles.index'
 import { Route as PodcastsIdRouteImport } from './routes/podcasts.$id'
 import { Route as CategoriesSlugRouteImport } from './routes/categories.$slug'
 import { Route as ArticlesSlugRouteImport } from './routes/articles.$slug'
+import { Route as ApiPublicNotifyRouteImport } from './routes/api/public/notify'
 
 const VideosRoute = VideosRouteImport.update({
   id: '/videos',
@@ -100,6 +101,11 @@ const ArticlesSlugRoute = ArticlesSlugRouteImport.update({
   path: '/articles/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicNotifyRoute = ApiPublicNotifyRouteImport.update({
+  id: '/api/public/notify',
+  path: '/api/public/notify',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -117,6 +123,7 @@ export interface FileRoutesByFullPath {
   '/podcasts/$id': typeof PodcastsIdRoute
   '/articles/': typeof ArticlesIndexRoute
   '/podcasts/': typeof PodcastsIndexRoute
+  '/api/public/notify': typeof ApiPublicNotifyRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -134,6 +141,7 @@ export interface FileRoutesByTo {
   '/podcasts/$id': typeof PodcastsIdRoute
   '/articles': typeof ArticlesIndexRoute
   '/podcasts': typeof PodcastsIndexRoute
+  '/api/public/notify': typeof ApiPublicNotifyRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -152,6 +160,7 @@ export interface FileRoutesById {
   '/podcasts/$id': typeof PodcastsIdRoute
   '/articles/': typeof ArticlesIndexRoute
   '/podcasts/': typeof PodcastsIndexRoute
+  '/api/public/notify': typeof ApiPublicNotifyRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -171,6 +180,7 @@ export interface FileRouteTypes {
     | '/podcasts/$id'
     | '/articles/'
     | '/podcasts/'
+    | '/api/public/notify'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -188,6 +198,7 @@ export interface FileRouteTypes {
     | '/podcasts/$id'
     | '/articles'
     | '/podcasts'
+    | '/api/public/notify'
   id:
     | '__root__'
     | '/'
@@ -205,6 +216,7 @@ export interface FileRouteTypes {
     | '/podcasts/$id'
     | '/articles/'
     | '/podcasts/'
+    | '/api/public/notify'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -223,6 +235,7 @@ export interface RootRouteChildren {
   PodcastsIdRoute: typeof PodcastsIdRoute
   ArticlesIndexRoute: typeof ArticlesIndexRoute
   PodcastsIndexRoute: typeof PodcastsIndexRoute
+  ApiPublicNotifyRoute: typeof ApiPublicNotifyRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -332,6 +345,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ArticlesSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/notify': {
+      id: '/api/public/notify'
+      path: '/api/public/notify'
+      fullPath: '/api/public/notify'
+      preLoaderRoute: typeof ApiPublicNotifyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -351,6 +371,7 @@ const rootRouteChildren: RootRouteChildren = {
   PodcastsIdRoute: PodcastsIdRoute,
   ArticlesIndexRoute: ArticlesIndexRoute,
   PodcastsIndexRoute: PodcastsIndexRoute,
+  ApiPublicNotifyRoute: ApiPublicNotifyRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
