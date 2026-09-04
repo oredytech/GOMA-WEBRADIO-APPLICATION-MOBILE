@@ -94,6 +94,7 @@ export function useNotifications() {
             if (registration) {
               void registration.getNotifications({ tag: notificationTag }).then((notifications) => {
                 notifications.forEach((notification) => notification.close());
+                // `image`/`renotify` are supported by Chrome but absent from lib.dom types.
                 return registration.showNotification(title, {
                   body,
                   icon: "/logo.png",
@@ -102,7 +103,7 @@ export function useNotifications() {
                   tag: notificationTag,
                   renotify: false,
                   data: { url: payload.data?.url ?? "/notifications" },
-                });
+                } as NotificationOptions & { image?: string; renotify?: boolean });
               });
               return;
             }
