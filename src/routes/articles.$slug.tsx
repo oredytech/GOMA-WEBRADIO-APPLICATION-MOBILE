@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect } from "react";
+
 import { SmartImage } from "@/components/SmartImage";
 import { Screen } from "@/components/Screen";
 import { articleQuery } from "@/lib/queries";
@@ -36,16 +36,6 @@ function ArticlePage() {
   const article = articleQ.data;
   const { toggle, isFavorite } = useFavorites();
 
-  useEffect(() => {
-    if (typeof window === "undefined" || window.location.hostname !== "app.gomawebradio.com") return;
-    const isStandalone =
-      window.matchMedia("(display-mode: standalone)").matches ||
-      window.matchMedia("(display-mode: fullscreen)").matches ||
-      (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
-    if (!isStandalone) {
-      window.location.replace(`https://gomawebradio.com/news/${encodeURIComponent(slug)}`);
-    }
-  }, [slug]);
 
   if (articleQ.isPending) {
     return (

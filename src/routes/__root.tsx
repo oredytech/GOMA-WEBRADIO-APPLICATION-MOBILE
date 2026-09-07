@@ -22,6 +22,27 @@ try {
 } catch (e) {}
 `;
 
+// Visitors who did not install the app are sent to the public website.
+const webRedirectScript = `
+(function () {
+  try {
+    if (location.hostname !== "app.gomawebradio.com") return;
+    var installed =
+      (window.matchMedia && (matchMedia("(display-mode: standalone)").matches || matchMedia("(display-mode: fullscreen)").matches || matchMedia("(display-mode: minimal-ui)").matches)) ||
+      navigator.standalone === true ||
+      (document.referrer || "").indexOf("android-app://") === 0;
+    if (installed) return;
+    try { if (localStorage.getItem("gw-installed") === "1") return; } catch (e) {}
+
+    var site = "https://gomawebradio.com";
+    var p = location.pathname.replace(/\\/+$/, "");
+    var m = p.match(/^\\/(?:articles?|news)\\/([^/]+)$/);
+    var target = m ? site + "/news/" + m[1] : site + "/";
+    location.replace(target);
+  } catch (e) {}
+})();
+`;
+
 function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-paper px-6">
@@ -113,7 +134,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         href: "https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0..1,0&display=swap",
       },
     ],
-    scripts: [{ children: themeBootScript }],
+    scripts: [{ children: webRedirectScript }, { children: themeBootScript }],
   }),
   shellComponent: RootShell,
   component: RootComponent,
