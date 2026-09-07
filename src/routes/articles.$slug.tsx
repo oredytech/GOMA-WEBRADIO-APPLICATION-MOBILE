@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect } from "react";
+
 import { SmartImage } from "@/components/SmartImage";
 import { Screen } from "@/components/Screen";
 import { articleQuery } from "@/lib/queries";
