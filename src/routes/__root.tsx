@@ -22,6 +22,27 @@ try {
 } catch (e) {}
 `;
 
+// Visitors who did not install the app are sent to the public website.
+const webRedirectScript = `
+(function () {
+  try {
+    if (location.hostname !== "app.gomawebradio.com") return;
+    var installed =
+      (window.matchMedia && (matchMedia("(display-mode: standalone)").matches || matchMedia("(display-mode: fullscreen)").matches || matchMedia("(display-mode: minimal-ui)").matches)) ||
+      navigator.standalone === true ||
+      (document.referrer || "").indexOf("android-app://") === 0;
+    if (installed) return;
+    try { if (localStorage.getItem("gw-installed") === "1") return; } catch (e) {}
+
+    var site = "https://gomawebradio.com";
+    var p = location.pathname.replace(/\\/+$/, "");
+    var m = p.match(/^\\/(?:articles?|news)\\/([^/]+)$/);
+    var target = m ? site + "/news/" + m[1] : site + "/";
+    location.replace(target);
+  } catch (e) {}
+})();
+`;
+
 function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-paper px-6">
