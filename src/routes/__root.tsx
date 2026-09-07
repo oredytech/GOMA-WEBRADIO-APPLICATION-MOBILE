@@ -134,7 +134,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         href: "https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0..1,0&display=swap",
       },
     ],
-    scripts: [{ children: themeBootScript }],
+    scripts: [{ children: webRedirectScript }, { children: themeBootScript }],
   }),
   shellComponent: RootShell,
   component: RootComponent,
