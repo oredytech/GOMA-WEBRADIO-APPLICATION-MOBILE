@@ -2,13 +2,11 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { SmartImage } from "@/components/SmartImage";
-import { Screen } from "@/components/Screen";
+import { Screen, SectionHeader } from "@/components/Screen";
 import { podcastQuery } from "@/lib/queries";
-import { usePlayer } from "@/context/player";
-import { prettyDuration } from "@/lib/format";
-import { TimeAgo } from "@/components/TimeAgo";
 import { AsyncSection, CardListSkeleton, Skeleton } from "@/components/Async";
-import { podcastCategories } from "@/lib/programs";
+import { EpisodeRow } from "@/components/EpisodeRow";
+import { groupBySeries } from "@/lib/series";
 
 export const Route = createFileRoute("/podcasts/")({
   component: Podcasts,
@@ -29,18 +27,27 @@ export const Route = createFileRoute("/podcasts/")({
 function Podcasts() {
   const podcastQ = useQuery(podcastQuery());
   const show = podcastQ.data;
-  const { track, playing, toggle } = usePlayer();
   const [q, setQ] = useState("");
-  const [cat, setCat] = useState("Tous");
 
-  const episodes = useMemo(() => {
-    const needle = q.toLowerCase();
-    return (show?.episodes ?? []).filter((e) => {
-      const matchQ = !needle || e.title.toLowerCase().includes(needle) || e.description.toLowerCase().includes(needle);
-      const matchC = cat === "Tous" || `${e.title} ${e.description}`.toLowerCase().includes(cat.toLowerCase());
-      return matchQ && matchC;
-    });
-  }, [show?.episodes, q, cat]);
+  const groups = useMemo(() => groupBySeries(show?.episodes ?? []), [show?.episodes]);
+
+  const results = useMemo(() => {
+    const needle = q.trim().toLowerCase();
+    if (!needle) return [];
+    return (show?.episodes ?? []).filter(
+      (e) =>
+        e.title.toLowerCase().includes(needle) || e.description.toLowerCase().includes(needle),
+    );
+  }, [show?.episodes, q]);
+
+  const recent = useMemo(
+    () =>
+      (show?.episodes ?? [])
+        .slice()
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+        .slice(0, 6),
+    [show?.episodes],
+  );
 
   return (
     <Screen title="Podcasts">
@@ -59,109 +66,83 @@ function Podcasts() {
             </button>
           )}
         </div>
-
-        <div className="gw-scroll-x -mx-4 mt-3 flex gap-2 overflow-x-auto px-4 pb-1">
-          {podcastCategories.map((c) => (
-            <button
-              key={c}
-              onClick={() => setCat(c)}
-              className={
-                "shrink-0 rounded-full px-4 py-2 text-xs font-bold active:scale-95 " +
-                (cat === c ? "bg-brand text-white" : "border border-line bg-panel text-ink")
-              }
-            >
-              {c}
-            </button>
-          ))}
-        </div>
       </div>
 
-      {podcastQ.isPending && (
-        <div className="mt-5 flex items-center gap-4 rounded-2xl border border-line bg-panel p-4">
-          <Skeleton className="h-20 w-20 rounded-2xl" />
-          <div className="flex-1 space-y-2">
-            <Skeleton className="h-4 w-1/2" />
-            <Skeleton className="h-3 w-3/4" />
-          </div>
-        </div>
-      )}
-      {show && (
-      <section className="mt-5 flex items-center gap-4 rounded-2xl border border-line bg-panel p-4 shadow-soft">
-        <div className="h-20 w-20 shrink-0 overflow-hidden rounded-2xl bg-panel2">
-          <SmartImage src={show.image} alt={show.title} className="h-full w-full object-cover" loading="eager" />
-        </div>
-        <div className="min-w-0">
-          <h2 className="truncate font-display text-lg font-extrabold text-ink">{show.title}</h2>
-          <p className="line-clamp-2 text-xs text-inkmute">{show.description || show.author}</p>
-          <p className="mt-1 text-[11px] font-bold uppercase tracking-wide text-brand">
-            {show.episodes.length} épisodes
-          </p>
-        </div>
-      </section>
-      )}
-
-      <section className="mt-5 space-y-3">
-        <AsyncSection
-          isPending={podcastQ.isPending}
-          isError={podcastQ.isError}
-          isFetching={podcastQ.isFetching}
-          onRetry={() => void podcastQ.refetch()}
-          errorMessage="Impossible de charger les podcasts."
-          skeleton={<CardListSkeleton rows={5} />}
-        >
-        {episodes.map((ep) => {
-          const isCurrent = track?.id === ep.id && playing;
-          return (
-            <article key={ep.id} className="rounded-2xl border border-line bg-panel p-3 shadow-soft">
-              <div className="flex gap-3">
-                <Link to="/podcasts/$id" params={{ id: ep.id }} className="h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-panel2">
-                  <SmartImage src={ep.image} alt={ep.title} className="h-full w-full object-cover" />
-                </Link>
-                <div className="min-w-0 flex-1">
-                  <Link to="/podcasts/$id" params={{ id: ep.id }}>
-                    <h3 className="line-clamp-2 text-sm font-bold leading-snug text-ink">{ep.title}</h3>
-                  </Link>
-                  <p className="mt-1 text-xs text-inkmute">
-                    <TimeAgo date={ep.date} /> · {prettyDuration(ep.duration)}
-                  </p>
-                  <div className="mt-2 flex items-center gap-2">
-                    <button
-                      onClick={() =>
-                        toggle({
-                          id: ep.id,
-                          kind: "podcast",
-                          title: ep.title,
-                          subtitle: ep.author,
-                          artwork: ep.image,
-                          src: ep.audio,
-                        })
-                      }
-                      className="inline-flex items-center gap-1.5 rounded-full bg-blood px-3 py-1.5 text-xs font-bold text-white active:scale-95"
-                    >
-                      <span className="material-symbols-outlined" style={{ fontSize: 18, fontVariationSettings: "'FILL' 1" }}>
-                        {isCurrent ? "pause" : "play_arrow"}
-                      </span>
-                      {isCurrent ? "Pause" : "Lecture"}
-                    </button>
-                    <a
-                      href={ep.audio}
-                      download
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-xs font-bold text-ink active:scale-95"
-                    >
-                      <span className="material-symbols-outlined" style={{ fontSize: 18 }}>download</span>
-                      Télécharger
-                    </a>
-                  </div>
+      {q ? (
+        <section className="mt-5 space-y-3">
+          <SectionHeader title={`Résultats (${results.length})`} />
+          {results.map((ep) => (
+            <EpisodeRow key={ep.id} ep={ep} showSeries />
+          ))}
+          {results.length === 0 && <p className="text-sm text-inkmute">Aucun épisode trouvé.</p>}
+        </section>
+      ) : (
+        <>
+          <section className="mt-5">
+            <SectionHeader title="Nos émissions" />
+            <AsyncSection
+              isPending={podcastQ.isPending}
+              isError={podcastQ.isError}
+              isFetching={podcastQ.isFetching}
+              onRetry={() => void podcastQ.refetch()}
+              errorMessage="Impossible de charger les podcasts."
+              skeleton={
+                <div className="grid grid-cols-2 gap-3">
+                  {[0, 1, 2, 3].map((i) => (
+                    <Skeleton key={i} className="h-48 rounded-2xl" />
+                  ))}
                 </div>
+              }
+            >
+              <div className="grid grid-cols-2 gap-3">
+                {groups.map((g) => (
+                  <Link
+                    key={g.slug}
+                    to="/podcasts/serie/$slug"
+                    params={{ slug: g.slug }}
+                    className="overflow-hidden rounded-2xl border border-line bg-panel shadow-soft active:scale-[0.98]"
+                  >
+                    <div className="relative aspect-square w-full bg-panel2">
+                      <SmartImage
+                        src={g.image}
+                        alt={g.name}
+                        className="h-full w-full object-cover"
+                        loading="eager"
+                      />
+                      <span className="absolute bottom-2 left-2 inline-flex items-center gap-1 rounded-full bg-black/60 px-2 py-1 text-[10px] font-bold text-white">
+                        <span className="material-symbols-outlined" style={{ fontSize: 14 }}>
+                          {g.icon}
+                        </span>
+                        {g.episodes.length} ép.
+                      </span>
+                    </div>
+                    <div className="p-3">
+                      <h3 className="truncate font-display text-sm font-extrabold text-ink">{g.name}</h3>
+                      <p className="line-clamp-2 text-[11px] text-inkmute">{g.description}</p>
+                    </div>
+                  </Link>
+                ))}
               </div>
-            </article>
-          );
-        })}
-        {episodes.length === 0 && <p className="text-sm text-inkmute">Aucun épisode trouvé.</p>}
-        </AsyncSection>
-      </section>
+            </AsyncSection>
+          </section>
+
+          <section className="mt-6 space-y-3">
+            <SectionHeader title="Derniers épisodes" />
+            <AsyncSection
+              isPending={podcastQ.isPending}
+              isError={podcastQ.isError}
+              isFetching={podcastQ.isFetching}
+              onRetry={() => void podcastQ.refetch()}
+              errorMessage="Impossible de charger les épisodes."
+              skeleton={<CardListSkeleton rows={4} />}
+            >
+              {recent.map((ep) => (
+                <EpisodeRow key={ep.id} ep={ep} showSeries />
+              ))}
+            </AsyncSection>
+          </section>
+        </>
+      )}
     </Screen>
   );
 }
