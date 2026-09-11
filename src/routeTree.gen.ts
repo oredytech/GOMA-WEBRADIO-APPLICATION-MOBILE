@@ -22,6 +22,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as PodcastsIndexRouteImport } from './routes/podcasts.index'
 import { Route as ArticlesIndexRouteImport } from './routes/articles.index'
 import { Route as PodcastsIdRouteImport } from './routes/podcasts.$id'
+import { Route as NewsSlugRouteImport } from './routes/news.$slug'
 import { Route as CategoriesSlugRouteImport } from './routes/categories.$slug'
 import { Route as ArticlesSlugRouteImport } from './routes/articles.$slug'
 import { Route as ApiPublicNotifyRouteImport } from './routes/api/public/notify'
@@ -91,6 +92,11 @@ const PodcastsIdRoute = PodcastsIdRouteImport.update({
   path: '/podcasts/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const NewsSlugRoute = NewsSlugRouteImport.update({
+  id: '/news/$slug',
+  path: '/news/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CategoriesSlugRoute = CategoriesSlugRouteImport.update({
   id: '/categories/$slug',
   path: '/categories/$slug',
@@ -120,6 +126,7 @@ export interface FileRoutesByFullPath {
   '/videos': typeof VideosRoute
   '/articles/$slug': typeof ArticlesSlugRoute
   '/categories/$slug': typeof CategoriesSlugRoute
+  '/news/$slug': typeof NewsSlugRoute
   '/podcasts/$id': typeof PodcastsIdRoute
   '/articles/': typeof ArticlesIndexRoute
   '/podcasts/': typeof PodcastsIndexRoute
@@ -138,6 +145,7 @@ export interface FileRoutesByTo {
   '/videos': typeof VideosRoute
   '/articles/$slug': typeof ArticlesSlugRoute
   '/categories/$slug': typeof CategoriesSlugRoute
+  '/news/$slug': typeof NewsSlugRoute
   '/podcasts/$id': typeof PodcastsIdRoute
   '/articles': typeof ArticlesIndexRoute
   '/podcasts': typeof PodcastsIndexRoute
@@ -157,6 +165,7 @@ export interface FileRoutesById {
   '/videos': typeof VideosRoute
   '/articles/$slug': typeof ArticlesSlugRoute
   '/categories/$slug': typeof CategoriesSlugRoute
+  '/news/$slug': typeof NewsSlugRoute
   '/podcasts/$id': typeof PodcastsIdRoute
   '/articles/': typeof ArticlesIndexRoute
   '/podcasts/': typeof PodcastsIndexRoute
@@ -177,6 +186,7 @@ export interface FileRouteTypes {
     | '/videos'
     | '/articles/$slug'
     | '/categories/$slug'
+    | '/news/$slug'
     | '/podcasts/$id'
     | '/articles/'
     | '/podcasts/'
@@ -195,6 +205,7 @@ export interface FileRouteTypes {
     | '/videos'
     | '/articles/$slug'
     | '/categories/$slug'
+    | '/news/$slug'
     | '/podcasts/$id'
     | '/articles'
     | '/podcasts'
@@ -213,6 +224,7 @@ export interface FileRouteTypes {
     | '/videos'
     | '/articles/$slug'
     | '/categories/$slug'
+    | '/news/$slug'
     | '/podcasts/$id'
     | '/articles/'
     | '/podcasts/'
@@ -232,6 +244,7 @@ export interface RootRouteChildren {
   VideosRoute: typeof VideosRoute
   ArticlesSlugRoute: typeof ArticlesSlugRoute
   CategoriesSlugRoute: typeof CategoriesSlugRoute
+  NewsSlugRoute: typeof NewsSlugRoute
   PodcastsIdRoute: typeof PodcastsIdRoute
   ArticlesIndexRoute: typeof ArticlesIndexRoute
   PodcastsIndexRoute: typeof PodcastsIndexRoute
@@ -331,6 +344,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PodcastsIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/news/$slug': {
+      id: '/news/$slug'
+      path: '/news/$slug'
+      fullPath: '/news/$slug'
+      preLoaderRoute: typeof NewsSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/categories/$slug': {
       id: '/categories/$slug'
       path: '/categories/$slug'
@@ -368,6 +388,7 @@ const rootRouteChildren: RootRouteChildren = {
   VideosRoute: VideosRoute,
   ArticlesSlugRoute: ArticlesSlugRoute,
   CategoriesSlugRoute: CategoriesSlugRoute,
+  NewsSlugRoute: NewsSlugRoute,
   PodcastsIdRoute: PodcastsIdRoute,
   ArticlesIndexRoute: ArticlesIndexRoute,
   PodcastsIndexRoute: PodcastsIndexRoute,
