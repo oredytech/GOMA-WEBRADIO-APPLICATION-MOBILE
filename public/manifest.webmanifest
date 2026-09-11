@@ -7,6 +7,7 @@
   "dir": "ltr",
   "start_url": "/",
   "scope": "/",
+  "scope_extensions": [{ "origin": "https://gomawebradio.com" }, { "origin": "https://www.gomawebradio.com" }],
   "display": "standalone",
   "display_override": ["standalone", "minimal-ui", "browser"],
   "orientation": "portrait-primary",
