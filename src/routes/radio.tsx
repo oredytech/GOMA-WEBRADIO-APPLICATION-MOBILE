@@ -80,13 +80,25 @@ function Radio() {
       </header>
 
       <main className="relative z-10 mx-auto w-full max-w-2xl px-5 pb-44 pt-6">
-        {/* Pochette : logo de la radio */}
-        <div className="mx-auto flex aspect-square w-full max-w-[300px] items-center justify-center rounded-3xl bg-white/10 p-10 shadow-lift ring-1 ring-white/15 backdrop-blur-md">
+        {/* Pochette : logo de la radio avec le bouton Play/Pause en overlay centré */}
+        <div className="relative mx-auto aspect-square w-full max-w-[300px] rounded-3xl bg-white/10 p-10 shadow-lift ring-1 ring-white/15 backdrop-blur-md">
           <img
             src={LOGO_URL}
             alt={RADIO_NAME}
             className={"h-full w-full object-contain transition-transform " + (isLive ? "animate-pulse-slow" : "")}
           />
+          <button
+            aria-label={isLive ? "Pause" : "Lecture"}
+            onClick={() => toggle(LIVE_TRACK)}
+            className="absolute inset-0 m-auto flex h-20 w-20 items-center justify-center rounded-full bg-blood/90 text-white shadow-lift transition-transform active:scale-95"
+          >
+            <span
+              className={"material-symbols-outlined " + (isLoading ? "animate-spin" : "")}
+              style={{ fontSize: 44, fontVariationSettings: "'FILL' 1" }}
+            >
+              {isLoading ? "progress_activity" : isLive ? "pause" : "play_arrow"}
+            </span>
+          </button>
         </div>
 
         <div className="mt-7 text-center">
@@ -119,7 +131,7 @@ function Radio() {
           </div>
         </div>
 
-        {/* Contrôles */}
+        {/* Contrôles secondaires */}
         <div className="mt-7 flex items-center justify-center gap-8">
           <button
             aria-label={fav ? "Retirer des favoris" : "Ajouter aux favoris"}
@@ -138,19 +150,6 @@ function Radio() {
           >
             <span className="material-symbols-outlined" style={{ fontVariationSettings: fav ? "'FILL' 1" : undefined }}>
               favorite
-            </span>
-          </button>
-
-          <button
-            aria-label={isLive ? "Pause" : "Lecture"}
-            onClick={() => toggle(LIVE_TRACK)}
-            className="flex h-20 w-20 items-center justify-center rounded-full bg-blood text-white shadow-lift transition-transform active:scale-95"
-          >
-            <span
-              className={"material-symbols-outlined " + (isLoading ? "animate-spin" : "")}
-              style={{ fontSize: 44, fontVariationSettings: "'FILL' 1" }}
-            >
-              {isLoading ? "progress_activity" : isLive ? "pause" : "play_arrow"}
             </span>
           </button>
 
