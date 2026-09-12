@@ -10,6 +10,7 @@ import { TimeAgo } from "@/components/TimeAgo";
 import { ErrorRetry, Skeleton } from "@/components/Async";
 import { useFavorites } from "@/hooks/useFavorites";
 import { useDownload } from "@/hooks/useDownloads";
+import { cleanEpisodeTitle, seriesOf } from "@/lib/series";
 import type { Episode } from "@/lib/feeds.types";
 
 export const Route = createFileRoute("/podcasts/$id")({
@@ -33,8 +34,8 @@ function toTrack(ep: Episode): Track {
   return {
     id: ep.id,
     kind: "podcast",
-    title: ep.title,
-    subtitle: ep.author,
+    title: cleanEpisodeTitle(ep),
+    subtitle: seriesOf(ep).name,
     artwork: ep.image,
     src: ep.audio,
   };
@@ -168,14 +169,26 @@ function EpisodePage() {
         {/* Titre + favoris */}
         <div className="mt-5 flex items-start gap-3">
           <div className="min-w-0 flex-1">
-            <h1 className="font-display text-xl font-extrabold leading-tight text-ink">{ep.title}</h1>
+            <Link
+              to="/podcasts/serie/$slug"
+              params={{ slug: seriesOf(ep).slug }}
+              className="inline-flex items-center gap-1 rounded-full bg-brand/15 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-brand"
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: 14 }}>
+                {seriesOf(ep).icon}
+              </span>
+              {seriesOf(ep).name}
+            </Link>
+            <h1 className="mt-1.5 font-display text-xl font-extrabold leading-tight text-ink">
+              {cleanEpisodeTitle(ep)}
+            </h1>
             <p className="mt-1 truncate text-xs text-inkmute">
               {ep.author} · <TimeAgo date={ep.date} /> · {prettyDuration(ep.duration)}
             </p>
           </div>
           <button
             aria-label="Favori"
-            onClick={() => toggleFav({ id: ep.id, kind: "podcast", title: ep.title, subtitle: ep.author, image: ep.image, href: `/podcasts/${ep.id}`, audio: ep.audio })}
+            onClick={() => toggleFav({ id: ep.id, kind: "podcast", title: cleanEpisodeTitle(ep), subtitle: seriesOf(ep).name, image: ep.image, href: `/podcasts/${ep.id}`, audio: ep.audio })}
             className={"flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-line active:scale-95 " + (fav ? "bg-blood/15 text-blood" : "bg-panel text-inkmute")}
           >
             <span className="material-symbols-outlined" style={{ fontVariationSettings: fav ? "'FILL' 1" : undefined }}>favorite</span>
@@ -297,7 +310,7 @@ function EpisodePage() {
         <div className="mt-4 flex flex-wrap gap-2">
           <DownloadButton ep={ep} />
           <button
-            onClick={() => shareContent({ title: ep.title })}
+            onClick={() => shareContent({ title: cleanEpisodeTitle(ep) })}
             className="inline-flex items-center gap-2 rounded-full border border-line bg-panel px-4 py-2.5 text-sm font-bold text-ink active:scale-95"
           >
             <span className="material-symbols-outlined" style={{ fontSize: 20 }}>share</span>
@@ -317,7 +330,7 @@ function EpisodePage() {
                   <SmartImage src={e.image} alt={e.title} className="h-full w-full object-cover" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <h3 className="line-clamp-2 text-sm font-bold text-ink">{e.title}</h3>
+                  <h3 className="line-clamp-2 text-sm font-bold text-ink">{cleanEpisodeTitle(e)}</h3>
                   <p className="mt-1 text-xs text-inkmute">{prettyDuration(e.duration)}</p>
                 </div>
               </Link>
