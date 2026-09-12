@@ -10,6 +10,7 @@ import { TimeAgo } from "@/components/TimeAgo";
 import { ErrorRetry, Skeleton } from "@/components/Async";
 import { useFavorites } from "@/hooks/useFavorites";
 import { useDownload } from "@/hooks/useDownloads";
+import { cleanEpisodeTitle, seriesOf } from "@/lib/series";
 import type { Episode } from "@/lib/feeds.types";
 
 export const Route = createFileRoute("/podcasts/$id")({
@@ -33,8 +34,8 @@ function toTrack(ep: Episode): Track {
   return {
     id: ep.id,
     kind: "podcast",
-    title: ep.title,
-    subtitle: ep.author,
+    title: cleanEpisodeTitle(ep),
+    subtitle: seriesOf(ep).name,
     artwork: ep.image,
     src: ep.audio,
   };
@@ -168,7 +169,19 @@ function EpisodePage() {
         {/* Titre + favoris */}
         <div className="mt-5 flex items-start gap-3">
           <div className="min-w-0 flex-1">
-            <h1 className="font-display text-xl font-extrabold leading-tight text-ink">{ep.title}</h1>
+            <Link
+              to="/podcasts/serie/$slug"
+              params={{ slug: seriesOf(ep).slug }}
+              className="inline-flex items-center gap-1 rounded-full bg-brand/15 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-brand"
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: 14 }}>
+                {seriesOf(ep).icon}
+              </span>
+              {seriesOf(ep).name}
+            </Link>
+            <h1 className="mt-1.5 font-display text-xl font-extrabold leading-tight text-ink">
+              {cleanEpisodeTitle(ep)}
+            </h1>
             <p className="mt-1 truncate text-xs text-inkmute">
               {ep.author} · <TimeAgo date={ep.date} /> · {prettyDuration(ep.duration)}
             </p>
