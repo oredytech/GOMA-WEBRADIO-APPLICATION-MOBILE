@@ -90,10 +90,15 @@ function Radio() {
           <button
             aria-label={isLive ? "Pause" : "Lecture"}
             onClick={() => toggle(LIVE_TRACK)}
-            className="absolute inset-0 m-auto flex h-20 w-20 items-center justify-center rounded-full bg-blood/90 text-white shadow-lift transition-transform active:scale-95"
+            className={
+              "absolute inset-0 m-auto flex h-20 w-20 items-center justify-center rounded-full bg-blood/90 text-white shadow-lift transition-transform active:scale-95 " +
+              (!isLive && !isLoading
+                ? "before:absolute before:inset-0 before:rounded-full before:bg-blood/35 before:animate-ping"
+                : "")
+            }
           >
             <span
-              className={"material-symbols-outlined " + (isLoading ? "animate-spin" : "")}
+              className={"material-symbols-outlined relative z-10 " + (isLoading ? "animate-spin" : "")}
               style={{ fontSize: 44, fontVariationSettings: "'FILL' 1" }}
             >
               {isLoading ? "progress_activity" : isLive ? "pause" : "play_arrow"}
@@ -132,7 +137,7 @@ function Radio() {
         </div>
 
         {/* Contrôles secondaires */}
-        <div className="mt-7 flex items-center justify-center gap-8">
+        <div className="mt-5 flex items-center justify-center gap-8">
           <button
             aria-label={fav ? "Retirer des favoris" : "Ajouter aux favoris"}
             onClick={() => {
@@ -163,7 +168,7 @@ function Radio() {
         </div>
 
         {/* Volume */}
-        <div className="mt-6 flex items-center gap-3">
+        <div className="mt-4 flex items-center gap-3">
           <span className="material-symbols-outlined text-white/70" style={{ fontSize: 20 }}>volume_down</span>
           <input
             type="range"
@@ -178,7 +183,7 @@ function Radio() {
         </div>
 
         {/* Qualité */}
-        <div className="mt-6">
+        <div className="mt-4">
           <p className="mb-2 text-xs font-bold uppercase tracking-wide text-white/70">Qualité audio</p>
           <div className="flex gap-2">
             {qualities.map((q) => (
@@ -197,7 +202,7 @@ function Radio() {
         </div>
 
         {/* Podcasts récents */}
-        <section className="mt-8">
+        <section className="mt-6">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="font-display text-lg font-extrabold text-white">Podcasts récents</h2>
             <Link to="/podcasts" className="text-xs font-bold uppercase tracking-wide text-brand">
