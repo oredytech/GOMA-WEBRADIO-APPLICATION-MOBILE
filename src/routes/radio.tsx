@@ -90,10 +90,15 @@ function Radio() {
           <button
             aria-label={isLive ? "Pause" : "Lecture"}
             onClick={() => toggle(LIVE_TRACK)}
-            className="absolute inset-0 m-auto flex h-20 w-20 items-center justify-center rounded-full bg-blood/90 text-white shadow-lift transition-transform active:scale-95"
+            className={
+              "absolute inset-0 m-auto flex h-20 w-20 items-center justify-center rounded-full bg-blood/90 text-white shadow-lift transition-transform active:scale-95 " +
+              (!isLive && !isLoading
+                ? "before:absolute before:inset-0 before:rounded-full before:bg-blood/35 before:animate-ping"
+                : "")
+            }
           >
             <span
-              className={"material-symbols-outlined " + (isLoading ? "animate-spin" : "")}
+              className={"material-symbols-outlined relative z-10 " + (isLoading ? "animate-spin" : "")}
               style={{ fontSize: 44, fontVariationSettings: "'FILL' 1" }}
             >
               {isLoading ? "progress_activity" : isLive ? "pause" : "play_arrow"}
